@@ -1,0 +1,19 @@
+[[constraint]]
+  name = "github.com/cbroglie/mustache"
+  version = "v1.0.1"
+
+[[constraint]]
+  name = "github.com/ghodss/yaml"
+  version = "v1.0.0"
+
+[[constraint]]
+  name = "github.com/robertkrimen/otto"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/robfig/cron"
+  version = "v1.1"
+
+[[constraint]]
+  name = "github.com/urfave/cli"
+  version = "v1.20.0"

@@ -1,0 +1,18 @@
+language: go
+
+go:
+  - "1.10.x"
+
+go_import_path: github.com/uphy/elastic-watcher
+
+script: make package
+
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key: $GITHUB_TOKEN
+  file_glob: true
+  file: '$TRAVIS_BUILD_DIR/dist/*'
+  overwrite: true
+  on:
+    tags: true
