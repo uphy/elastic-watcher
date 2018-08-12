@@ -19,16 +19,16 @@ type (
 	}
 	HTTPRequest struct {
 		// split url components
-		Scheme *string                 `json:"scheme"`
-		Host   *string                 `json:"host"`
-		Port   *int                    `json:"port"`
-		Path   *context.TemplateValue  `json:"path"`
-		Params *context.TemplateValues `json:"params"`
+		Scheme *string                 `json:"scheme,omitempty"`
+		Host   *string                 `json:"host,omitempty"`
+		Port   *int                    `json:"port,omitempty"`
+		Path   *context.TemplateValue  `json:"path,omitempty"`
+		Params *context.TemplateValues `json:"params,omitempty"`
 		// simple url
-		URL     *string                 `json:"url"`
-		Method  *string                 `json:"method"`
-		Body    *context.TemplateValue  `json:"body"`
-		Headers *context.TemplateValues `json:"headers"`
+		URL     *string                 `json:"url,omitempty"`
+		Method  *string                 `json:"method,omitempty"`
+		Body    *context.TemplateValue  `json:"body,omitempty"`
+		Headers *context.TemplateValues `json:"headers,omitempty"`
 	}
 )
 
