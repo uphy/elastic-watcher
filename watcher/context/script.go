@@ -32,10 +32,10 @@ func (s *Script) Value(ctx ExecutionContext) (interface{}, error) {
 }
 
 func (s *Script) value(ctx ExecutionContext) (*otto.Value, error) {
-	if s.Lang != nil && *s.Lang == "painless" {
-		return nil, errors.New("`painless` script is not supported")
+	if s.Lang != nil && *s.Lang != "javascript" {
+		return nil, errors.New("unsupported script language: " + *s.Lang)
 	}
-	var params map[string]interface{}
+	params := map[string]interface{}{}
 	if s.Params != nil {
 		m, err := s.Params.Map(ctx)
 		if err != nil {
@@ -45,9 +45,21 @@ func (s *Script) value(ctx ExecutionContext) (*otto.Value, error) {
 			params[key] = value
 		}
 	}
-	script, err := s.findScript()
-	if err != nil {
-		return nil, err
+	var script string
+	if s.Inline != nil {
+		script = *s.Inline
+	} else if s.Source != nil {
+		script = *s.Source
+	} else if s.ID != nil {
+		var sid = *s.ID
+		ss, ok := ctx.GlobalConfig().Scripts[sid]
+		if !ok {
+			return nil, errors.New("script not found: " + sid)
+		}
+		if ss.Lang != nil && *ss.Lang != "javascript" {
+			return nil, errors.New("unsupported script language: " + *ss.Lang)
+		}
+		script = ss.Source
 	}
 	v, err := RunScript(ctx, script, params)
 	if err != nil {
@@ -56,32 +68,21 @@ func (s *Script) value(ctx ExecutionContext) (*otto.Value, error) {
 	return &v, err
 }
 
-func (s *Script) findScript() (string, error) {
-	if s.Inline != nil {
-		return *s.Inline, nil
-	}
-	if s.Source != nil {
-		return *s.Source, nil
-	}
-	if s.ID != nil {
-		return "", nil
-	}
-	return "", errors.New("empty script")
-}
-
 func (i Script) MarshalJSON() ([]byte, error) {
 	// full script
 	if i.ID != nil || i.Lang != nil || i.Params != nil {
 		type T Script
 		var t T
+		t = T(i)
 		return json.Marshal(t)
 	}
 	// inline script
-	script, err := i.findScript()
-	if err != nil {
-		return nil, err
+	if i.Inline != nil {
+		return json.Marshal(i.Inline)
+	} else if i.Source != nil {
+		return json.Marshal(i.Source)
 	}
-	return json.Marshal(script)
+	return nil, errors.New("empty script")
 }
 
 func (i *Script) UnmarshalJSON(data []byte) error {

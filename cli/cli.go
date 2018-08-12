@@ -104,6 +104,7 @@ func NewCLI() *CLI {
 	app.Commands = []cli.Command{}
 	app.Commands = append(app.Commands, c.watch())
 	app.Commands = append(app.Commands, c.run())
+	app.Commands = append(app.Commands, c.config())
 	return &CLI{
 		app: app,
 	}

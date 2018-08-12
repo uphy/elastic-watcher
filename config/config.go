@@ -11,9 +11,10 @@ import (
 
 type (
 	Config struct {
-		Debug         bool          `json:"debug,omitempty"`
-		Elasticsearch Elasticsearch `json:"elasticsearch"`
-		Email         Email         `json:"email"`
+		Debug         bool               `json:"debug,omitempty"`
+		Elasticsearch Elasticsearch      `json:"elasticsearch"`
+		Email         *Email             `json:"email,omitempty"`
+		Scripts       map[string]*Script `json:"scripts,omitempty"`
 	}
 )
 

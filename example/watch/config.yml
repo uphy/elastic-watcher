@@ -1,0 +1,7 @@
+elasticsearch:
+  url: http://localhost:9200
+scripts:
+  hello:
+    lang: javascript
+    source: |
+      console.log('hello ' + username)

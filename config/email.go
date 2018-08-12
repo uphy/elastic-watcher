@@ -2,8 +2,8 @@ package config
 
 type (
 	Email struct {
-		DefaultAccount string              `json:"default_account"`
-		Accounts       map[string]*Account `json:"account"`
+		DefaultAccount string              `json:"default_account,omitempty"`
+		Accounts       map[string]*Account `json:"account,omitempty"`
 	}
 	Account struct {
 		Profile *string `json:"profile"`
