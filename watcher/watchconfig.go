@@ -14,11 +14,12 @@ import (
 
 type (
 	WatchConfig struct {
-		Trigger   Trigger              `json:"trigger"`
-		Input     input.Input          `json:"input"`
-		Condition condition.Conditions `json:"condition"`
-		Transform *transform.Transform `json:"transform"`
-		Actions   actions.Actions      `json:"actions"`
+		Metadata  map[string]interface{} `json:"metadata"`
+		Trigger   Trigger                `json:"trigger"`
+		Input     input.Input            `json:"input"`
+		Condition condition.Conditions   `json:"condition"`
+		Transform *transform.Transform   `json:"transform"`
+		Actions   actions.Actions        `json:"actions"`
 	}
 	Trigger struct {
 		Schedule *Schedule `json:"schedule"`

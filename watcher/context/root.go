@@ -9,19 +9,23 @@ import (
 
 type (
 	rootExecutionContext struct {
-		watchID       string      `json:"watch_id"`
-		executionTime time.Time   `json:"execution_time"`
-		trigger       Trigger     `json:"trigger"`
-		metadata      interface{} `json:"metadata"`
-		payload       interface{} `json:"-"`
-		vars          interface{} `json:"-"`
+		watchID       string
+		executionTime time.Time
+		trigger       Trigger
+		metadata      map[string]interface{}
+		payload       interface{}
+		vars          interface{}
 		globalConfig  *config.Config
 	}
 )
 
 var currentID = 0
 
-func New(globalConfig *config.Config) ExecutionContext {
+func TODO() ExecutionContext {
+	return New(&config.Config{}, map[string]interface{}{})
+}
+
+func New(globalConfig *config.Config, metadata map[string]interface{}) ExecutionContext {
 	id := currentID
 	currentID++
 	t := time.Now()
@@ -32,6 +36,7 @@ func New(globalConfig *config.Config) ExecutionContext {
 			TriggeredTime: t,
 			ScheduledTime: t,
 		},
+		metadata:     metadata,
 		globalConfig: globalConfig,
 	}
 }

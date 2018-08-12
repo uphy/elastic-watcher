@@ -3,8 +3,6 @@ package context
 import (
 	"encoding/json"
 	"testing"
-
-	"github.com/uphy/elastic-watcher/config"
 )
 
 func TestTemplateUnmarshal_SingleValue(t *testing.T) {
@@ -21,7 +19,7 @@ func TestTemplateUnmarshal_SingleValue(t *testing.T) {
 	if foo.V.Size() != 1 {
 		t.Errorf("want 1 but %d", foo.V.Size())
 	}
-	ctx := New(&config.Config{})
+	ctx := TODO()
 	ctx.SetPayload(map[string]string{
 		"value": "foo",
 	})
@@ -72,7 +70,7 @@ func TestTemplateUnmarshal_ArrayValue(t *testing.T) {
 	if foo.V.Size() != 2 {
 		t.Errorf("want 2 but %d", foo.V.Size())
 	}
-	ctx := New(&config.Config{})
+	ctx := TODO()
 	ctx.SetPayload(map[string]string{
 		"value1": "foo",
 		"value2": "bar",
@@ -110,7 +108,7 @@ func TestTemplateUnmarshal_MapValue(t *testing.T) {
 	if foo.V.Size() != 2 {
 		t.Errorf("want 2 but %d", foo.V.Size())
 	}
-	ctx := New(&config.Config{})
+	ctx := TODO()
 	ctx.SetPayload(map[string]string{
 		"value1": "foo",
 		"value2": "bar",

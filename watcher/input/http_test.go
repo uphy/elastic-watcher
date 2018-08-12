@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/uphy/elastic-watcher/config"
 	"github.com/uphy/elastic-watcher/watcher/context"
 )
 
@@ -40,7 +39,7 @@ func TestHTTPRead(t *testing.T) {
 	if err := json.Unmarshal([]byte(req), &httpInput); err != nil {
 		t.Error(err)
 	}
-	ctx := context.New(&config.Config{})
+	ctx := context.TODO()
 	v, err := httpInput.Read(ctx)
 	if err != nil {
 		t.Error(err)

@@ -1,3 +1,7 @@
+metadata:
+  foo: abcde
+  bar: 1
+
 trigger:
   schedule:
     cron: '@every 10s'

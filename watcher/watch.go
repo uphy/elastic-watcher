@@ -12,7 +12,7 @@ type Watch struct {
 }
 
 func NewWatch(globalConfig *config.Config, c *WatchConfig) *Watch {
-	return &Watch{c, context.New(globalConfig)}
+	return &Watch{c, context.New(globalConfig, c.Metadata)}
 }
 
 func (w *Watch) Run() error {
