@@ -17,7 +17,7 @@ type (
 )
 
 func (t TemplateValue) String(ctx ExecutionContext) (string, error) {
-	return RenderTemplate(ctx, string(t))
+	return renderTemplate(ctx, string(t))
 }
 
 func (t TemplateValues) String(ctx ExecutionContext, index int) (string, error) {
@@ -43,6 +43,30 @@ func (t TemplateValues) Keys() []string {
 
 func (t TemplateValues) Size() int {
 	return len(t)
+}
+
+func (t TemplateValues) Map(ctx ExecutionContext) (map[string]string, error) {
+	m := map[string]string{}
+	for _, key := range t.Keys() {
+		v, err := t.StringByKey(ctx, key)
+		if err != nil {
+			return nil, err
+		}
+		m[key] = v
+	}
+	return m, nil
+}
+
+func (t TemplateValues) Slice(ctx ExecutionContext) ([]string, error) {
+	s := []string{}
+	for _, e := range t {
+		v, err := e.value.String(ctx)
+		if err != nil {
+			return nil, err
+		}
+		s = append(s, v)
+	}
+	return s, nil
 }
 
 func (t TemplateValues) MarshalJSON() ([]byte, error) {

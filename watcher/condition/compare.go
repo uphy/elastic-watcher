@@ -34,7 +34,7 @@ func (c CompareCondition) Match(ctx context.ExecutionContext) (bool, error) {
 }
 
 func (c *Compare) match(ctx context.ExecutionContext, format string, field string, value json.Number) (bool, error) {
-	v, err := context.RunScript(ctx, fmt.Sprintf(format, field, value))
+	v, err := context.RunScript(ctx, fmt.Sprintf(format, field, value), nil)
 	if err != nil {
 		return false, err
 	}

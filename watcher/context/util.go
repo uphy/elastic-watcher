@@ -27,7 +27,7 @@ func data(ctx ExecutionContext) (interface{}, error) {
 	return v, nil
 }
 
-func RenderTemplate(ctx ExecutionContext, template string) (string, error) {
+func renderTemplate(ctx ExecutionContext, template string) (string, error) {
 	data, err := data(ctx)
 	if err != nil {
 		return "", err
@@ -35,7 +35,7 @@ func RenderTemplate(ctx ExecutionContext, template string) (string, error) {
 	return mustache.Render(template, map[string]interface{}{"ctx": data})
 }
 
-func RunScript(ctx ExecutionContext, script string) (otto.Value, error) {
+func RunScript(ctx ExecutionContext, script string, params map[string]interface{}) (otto.Value, error) {
 	// initialize javascript engine
 	vm := otto.New()
 
@@ -47,6 +47,14 @@ func RunScript(ctx ExecutionContext, script string) (otto.Value, error) {
 	if err := vm.Set("ctx", ctxData); err != nil {
 		return otto.NullValue(), err
 	}
+	if params != nil {
+		for k, v := range params {
+			if err := vm.Set(k, v); err != nil {
+				return otto.NullValue(), err
+			}
+		}
+	}
+
 	// run the script
 	v, err := vm.Run(script)
 	if err != nil {

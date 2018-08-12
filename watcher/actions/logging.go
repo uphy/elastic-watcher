@@ -7,14 +7,14 @@ import (
 )
 
 type LoggingAction struct {
-	Text string `json:"text"`
+	Text context.TemplateValue `json:"text"`
 }
 
 func (l *LoggingAction) Run(ctx context.ExecutionContext) error {
-	rendered, err := context.RenderTemplate(ctx, l.Text)
+	s, err := l.Text.String(ctx)
 	if err != nil {
 		return err
 	}
-	log.Println(rendered)
+	log.Println(s)
 	return nil
 }
