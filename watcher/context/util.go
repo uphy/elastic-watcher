@@ -13,7 +13,7 @@ import (
 	"github.com/robertkrimen/otto"
 )
 
-func data(ctx ExecutionContext) (interface{}, error) {
+func data(ctx ExecutionContext) (map[string]interface{}, error) {
 	v := map[string]interface{}{}
 	v["watch_id"] = ctx.WatchID()
 	v["execution_time"] = ctx.ExecutionTime()
@@ -27,12 +27,19 @@ func data(ctx ExecutionContext) (interface{}, error) {
 	return v, nil
 }
 
-func renderTemplate(ctx ExecutionContext, template string) (string, error) {
+func renderTemplate(ctx ExecutionContext, template string, params map[string]interface{}) (string, error) {
 	data, err := data(ctx)
 	if err != nil {
 		return "", err
 	}
-	return mustache.Render(template, map[string]interface{}{"ctx": data})
+	p := map[string]interface{}{}
+	p["ctx"] = data
+	if params != nil {
+		for k, v := range params {
+			p[k] = v
+		}
+	}
+	return mustache.Render(template, p)
 }
 
 func RunScript(ctx ExecutionContext, script string, params map[string]interface{}) (otto.Value, error) {

@@ -8,7 +8,11 @@ import (
 )
 
 type (
-	TemplateValue       string
+	TemplateValue struct {
+		ID     *string        `json:"id,omitempty"`
+		Source *string        `json:"source,omitempty"`
+		Params TemplateValues `json:"params,omitempty"`
+	}
 	TemplateValues      []templateValuesEntry
 	templateValuesEntry struct {
 		key   string
@@ -17,7 +21,54 @@ type (
 )
 
 func (t TemplateValue) String(ctx ExecutionContext) (string, error) {
-	return renderTemplate(ctx, string(t))
+	var source string
+	if t.Source != nil {
+		source = *t.Source
+	} else if t.ID != nil {
+		s, ok := ctx.GlobalConfig().Scripts[*t.ID]
+		if !ok {
+			return "", errors.New("stored template not found: " + *t.ID)
+		}
+		source = s.Source
+	}
+	params := map[string]interface{}{}
+	if t.Params != nil {
+		m, err := t.Params.Map(ctx)
+		if err != nil {
+			return "", err
+		}
+		for key, value := range m {
+			params[key] = value
+		}
+	}
+	return renderTemplate(ctx, source, params)
+}
+
+func (t TemplateValue) MarshalJSON() ([]byte, error) {
+	if t.ID == nil && t.Params != nil {
+		return json.Marshal(*t.Source)
+	}
+
+	type T TemplateValue
+	tt := T(t)
+	return json.Marshal(tt)
+}
+
+func (t *TemplateValue) UnmarshalJSON(data []byte) error {
+	type T TemplateValue
+	var tt T
+	if err := json.Unmarshal(data, &tt); err == nil {
+		*t = TemplateValue(tt)
+		return nil
+	}
+	var s string
+	if err := json.Unmarshal(data, &s); err == nil {
+		*t = TemplateValue{
+			Source: &s,
+		}
+		return nil
+	}
+	return errors.New("unsupported format")
 }
 
 func (t TemplateValues) String(ctx ExecutionContext, index int) (string, error) {

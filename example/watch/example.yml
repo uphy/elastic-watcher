@@ -67,3 +67,15 @@ actions:
         source: "true"
     logging:
       text: There are {{ ctx.payload.hits.total }} documents in your index. Threshold is 10.
+  my-greeting:
+    throttle_period: 10m
+    condition:
+      script:
+        lang: javascript
+        params: null
+        source: "true"
+    logging:
+      text:
+        id: template1
+        params:
+          username: uphy
