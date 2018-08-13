@@ -47,7 +47,7 @@ func (c *CLI) run() cli.Command {
 			for _, f := range ruleFiles {
 				watchConf, err := watcher.LoadFile(f)
 				if err != nil {
-					log.Printf("Failed to load config file %s: %v", path, err)
+					log.Printf("Failed to load config file %s: %v", f, err)
 					continue
 				}
 				watchConfigs = append(watchConfigs, watchConf)

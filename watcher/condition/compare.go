@@ -1,7 +1,6 @@
 package condition
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/uphy/elastic-watcher/watcher/context"
@@ -11,12 +10,12 @@ type (
 	CompareCondition map[string]Compare
 
 	Compare struct {
-		EQ    *json.Number `json:"eq,omitempty"`
-		NotEQ *json.Number `json:"not_eq,omitempty"`
-		GT    *json.Number `json:"gt,omitempty"`
-		GTE   *json.Number `json:"gte,omitempty"`
-		LT    *json.Number `json:"lt,omitempty"`
-		LTE   *json.Number `json:"lte,omitempty"`
+		EQ    *context.TemplateValue `json:"eq,omitempty"`
+		NotEQ *context.TemplateValue `json:"not_eq,omitempty"`
+		GT    *context.TemplateValue `json:"gt,omitempty"`
+		GTE   *context.TemplateValue `json:"gte,omitempty"`
+		LT    *context.TemplateValue `json:"lt,omitempty"`
+		LTE   *context.TemplateValue `json:"lte,omitempty"`
 	}
 )
 
@@ -33,7 +32,7 @@ func (c CompareCondition) Match(ctx context.ExecutionContext) (bool, error) {
 	return true, nil
 }
 
-func (c *Compare) match(ctx context.ExecutionContext, format string, field string, value json.Number) (bool, error) {
+func (c *Compare) match(ctx context.ExecutionContext, format string, field string, value string) (bool, error) {
 	v, err := context.RunScript(ctx, fmt.Sprintf(format, field, value), nil)
 	if err != nil {
 		return false, err
@@ -50,7 +49,11 @@ func (c *Compare) match(ctx context.ExecutionContext, format string, field strin
 
 func (c *Compare) Match(field string, ctx context.ExecutionContext) (bool, error) {
 	if c.EQ != nil {
-		v, err := c.match(ctx, "%s === %v", field, *c.EQ)
+		s, err := c.EQ.String(ctx)
+		if err != nil {
+			return false, err
+		}
+		v, err := c.match(ctx, "%s === '%v'", field, s)
 		if err != nil {
 			return false, err
 		}
@@ -59,7 +62,11 @@ func (c *Compare) Match(field string, ctx context.ExecutionContext) (bool, error
 		}
 	}
 	if c.NotEQ != nil {
-		v, err := c.match(ctx, "%s !== %v", field, *c.NotEQ)
+		s, err := c.NotEQ.String(ctx)
+		if err != nil {
+			return false, err
+		}
+		v, err := c.match(ctx, "%s !== '%v'", field, s)
 		if err != nil {
 			return false, err
 		}
@@ -68,7 +75,11 @@ func (c *Compare) Match(field string, ctx context.ExecutionContext) (bool, error
 		}
 	}
 	if c.GTE != nil {
-		v, err := c.match(ctx, "%s >= %v", field, *c.GTE)
+		s, err := c.GT.String(ctx)
+		if err != nil {
+			return false, err
+		}
+		v, err := c.match(ctx, "%s >= %v", field, s)
 		if err != nil {
 			return false, err
 		}
@@ -77,7 +88,11 @@ func (c *Compare) Match(field string, ctx context.ExecutionContext) (bool, error
 		}
 	}
 	if c.GT != nil {
-		v, err := c.match(ctx, "%s > %v", field, *c.GT)
+		s, err := c.GT.String(ctx)
+		if err != nil {
+			return false, err
+		}
+		v, err := c.match(ctx, "%s > %v", field, s)
 		if err != nil {
 			return false, err
 		}
@@ -86,7 +101,11 @@ func (c *Compare) Match(field string, ctx context.ExecutionContext) (bool, error
 		}
 	}
 	if c.LTE != nil {
-		v, err := c.match(ctx, "%s <= %v", field, *c.LTE)
+		s, err := c.LTE.String(ctx)
+		if err != nil {
+			return false, err
+		}
+		v, err := c.match(ctx, "%s <= %v", field, s)
 		if err != nil {
 			return false, err
 		}
@@ -95,7 +114,11 @@ func (c *Compare) Match(field string, ctx context.ExecutionContext) (bool, error
 		}
 	}
 	if c.LT != nil {
-		v, err := c.match(ctx, "%s < %v", field, *c.LT)
+		s, err := c.LT.String(ctx)
+		if err != nil {
+			return false, err
+		}
+		v, err := c.match(ctx, "%s < %v", field, s)
 		if err != nil {
 			return false, err
 		}

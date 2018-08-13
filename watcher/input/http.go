@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"mime"
 	"net/http"
 	"net/url"
 	"strings"
@@ -77,7 +78,7 @@ func (h *HTTP) Read(ctx context.ExecutionContext) (interface{}, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	contentType := resp.Header.Get("Content-Type")
+	contentType, _, _ := mime.ParseMediaType(resp.Header.Get("Content-Type"))
 
 	payload := map[string]interface{}{}
 	respBody, err := ioutil.ReadAll(resp.Body)
