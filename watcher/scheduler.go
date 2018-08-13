@@ -1,8 +1,6 @@
 package watcher
 
 import (
-	"fmt"
-
 	"github.com/robfig/cron"
 )
 
@@ -23,7 +21,6 @@ func newScheduler() *Scheduler {
 }
 
 func (s *Scheduler) AddTask(schedule string, task Task) error {
-	fmt.Println(schedule)
 	return s.c.AddJob(schedule, task)
 }
 

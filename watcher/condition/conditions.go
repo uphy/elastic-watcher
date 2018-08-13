@@ -41,6 +41,10 @@ func (c *Conditions) UnmarshalJSON(data []byte) (err error) {
 			condition = &ScriptCondition{}
 		case "compare":
 			condition = &CompareCondition{}
+		case "always":
+			condition = &AlwaysCondition{}
+		case "never":
+			condition = &NeverCondition{}
 		default:
 			return errors.New("unsupported condition: " + name)
 		}
