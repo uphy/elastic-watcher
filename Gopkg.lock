@@ -2,16 +2,34 @@
 
 
 [[projects]]
-  name = "github.com/cbroglie/mustache"
+  branch = "master"
+  name = "github.com/frohmut/mustache"
   packages = ["."]
-  revision = "eb931a9d20042e51d8a3a9ad5a9ba9bc8282c564"
-  version = "v1.0.1"
+  revision = "add28766e2fa496bdc6e34e0a7d01d7215189d87"
 
 [[projects]]
   name = "github.com/ghodss/yaml"
   packages = ["."]
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
   version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/errwrap"
+  packages = ["."]
+  revision = "d6c0cd88035724dd42e0f335ae30161c20575ecc"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/go-multierror"
+  packages = ["."]
+  revision = "3d5d8f294aa03d8e98859feac328afbdf1ae0703"
+
+[[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
 
 [[projects]]
   branch = "master"
@@ -46,6 +64,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1706e20887d96b9512ebf57c1f684c689697d72562b9430541c62537d7dee004"
+  inputs-digest = "8fa85df90959cd5429218b0ff08f352f710cf72a7ba13fbe3256a8f8622e7ce5"
   solver-name = "gps-cdcl"
   solver-version = 1

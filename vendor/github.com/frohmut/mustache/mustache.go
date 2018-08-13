@@ -20,6 +20,9 @@ var (
 	AllowMissingVariables = true
 )
 
+// parameter for lambda sections
+type RenderFn func(text string) (string, error)
+
 // A TagType represents the specific type of mustache tag that a Tag
 // represents. The zero TagType is not a valid type.
 type TagType uint
@@ -591,6 +594,29 @@ func renderSection(section *sectionElement, contextChain []interface{}, buf io.W
 			}
 		case reflect.Map, reflect.Struct:
 			contexts = append(contexts, value)
+		case reflect.Func:
+			var text bytes.Buffer
+			getSectionText(section.elems, &text)
+			render := func(text string) (string, error) {
+				templ, err := ParseString(text)
+				if err != nil {
+					return "", err
+				}
+				var buf bytes.Buffer
+				err = templ.renderTemplate(contextChain, &buf)
+				if err != nil {
+					return "", err
+				}
+				return buf.String(), nil
+			}
+			in := []reflect.Value{reflect.ValueOf(text.String()), reflect.ValueOf(render)}
+			res := val.Call(in)
+			res_str := res[0].String()
+			if !res[1].IsNil() {
+				return res[1].Interface().(error)
+			}
+			fmt.Fprintf(buf, "%s", res_str)
+			return nil
 		default:
 			contexts = append(contexts, context)
 		}
@@ -608,6 +634,39 @@ func renderSection(section *sectionElement, contextChain []interface{}, buf io.W
 		}
 	}
 	return nil
+}
+
+func getSectionText(elements []interface{}, buf io.Writer) {
+	for _, element := range elements {
+		getElementText(element, buf)
+	}
+}
+
+func getElementText(element interface{}, buf io.Writer) {
+	switch elem := element.(type) {
+	case *textElement:
+		fmt.Fprintf(buf, "%s", elem.text)
+	case *varElement:
+		fmt.Fprintf(buf, "{{%s}}", elem.name)
+	case *sectionElement:
+		if elem.inverted {
+			fmt.Fprintf(buf, "{{^%s}}", elem.name)
+		} else {
+			fmt.Fprintf(buf, "{{#%s}}", elem.name)
+		}
+		for _, nelem := range elem.elems {
+			getElementText(nelem, buf)
+		}
+		fmt.Fprintf(buf, "{{/%s}}", elem.name)
+	case *Template:
+		fmt.Fprint(buf, "???")
+	}
+}
+
+func renderSectionElements(elements []interface{}, contextChain []interface{}, buf io.Writer) {
+	for _, elem := range elements {
+		_ = renderElement(elem, contextChain, buf)
+	}
 }
 
 func renderElement(element interface{}, contextChain []interface{}, buf io.Writer) error {

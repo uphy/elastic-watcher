@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/cbroglie/mustache"
+	"github.com/frohmut/mustache"
 	"github.com/robertkrimen/otto"
 )
 
@@ -38,6 +38,23 @@ func renderTemplate(ctx ExecutionContext, template string, params map[string]int
 		for k, v := range params {
 			p[k] = v
 		}
+	}
+
+	// https://github.com/elastic/elasticsearch/blob/master/docs/reference/search/search-template.asciidoc
+	p["toJson"] = func(text string, render mustache.RenderFn) (string, error) {
+		value, err := RunScript(ctx, text, nil)
+		if err != nil {
+			return "", err
+		}
+		v, err := value.Export()
+		if err != nil {
+			return "", err
+		}
+		b, err := json.Marshal(v)
+		if err != nil {
+			return "", err
+		}
+		return string(b), nil
 	}
 	return mustache.Render(template, p)
 }

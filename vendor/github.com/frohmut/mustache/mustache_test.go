@@ -317,6 +317,45 @@ func TestMultiContext(t *testing.T) {
 	}
 }
 
+func lambda(text string, render RenderFn, res string, data map[string]interface{}) (string, error) {
+	d, err := render(text)
+	data[res] = d
+	if err == nil {
+		return "OK", nil
+	} else {
+		return "", err
+	}
+}
+
+func TestLambda(t *testing.T) {
+	templ := `Call:{{#lambda}}hello {{lookup}} {{#sub}}{{.}} {{/sub}}{{^negsub}}nothing{{/negsub}}{{/lambda}};Result:{{result}}`
+	data := make(map[string]interface{})
+	data["lookup"] = "world"
+	data["sub"] = []string{"subv1", "subv2"}
+	data["negsub"] = nil
+	data["lambda"] = func(text string, render RenderFn) (string, error) {
+		return lambda(text, render, "result", data)
+	}
+	output, _ := Render(templ, data)
+	expect := "Call:OK;Result:hello world subv1 subv2 nothing"
+	if output != expect {
+		t.Fatalf("TestMultiContext expected %q got %q", expect, output)
+	}
+}
+
+func TestLambdaError(t *testing.T) {
+	templ := `stop_at_error.{{#lambda}}{{/lambda}}.never_here`
+	data := make(map[string]interface{})
+	data["lambda"] = func(text string, render RenderFn) (string, error) {
+		return "", fmt.Errorf("test err")
+	}
+	output, _ := Render(templ, data)
+	expect := "stop_at_error."
+	if output != expect {
+		t.Fatalf("TestMultiContext expected %q got %q", expect, output)
+	}
+}
+
 var malformed = []Test{
 	{`{{#a}}{{}}{{/a}}`, Data{true, "hello"}, "", fmt.Errorf("line 1: empty tag")},
 	{`{{}}`, nil, "", fmt.Errorf("line 1: empty tag")},

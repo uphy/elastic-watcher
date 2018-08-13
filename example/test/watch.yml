@@ -71,7 +71,9 @@ actions:
         params: null
         source: "true"
     logging:
-      text: There are {{ ctx.payload.hits.total }} documents in your index. Threshold is 10.
+      text: |
+        There are {{ ctx.payload.hits.total }} documents in your index. Threshold is 10.        
+        JSON: {{#toJson}}ctx.payload{{/toJson}}
   my-greeting:
     throttle_period: 10m
     condition:

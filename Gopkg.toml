@@ -1,6 +1,6 @@
 [[constraint]]
-  name = "github.com/cbroglie/mustache"
-  version = "v1.0.1"
+  name = "github.com/frohmut/mustache"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/ghodss/yaml"
