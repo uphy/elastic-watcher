@@ -34,6 +34,9 @@ type (
 )
 
 func (h *HTTPInput) Read(ctx context.ExecutionContext) (context.Payload, error) {
+	return h.Request.Execute(ctx)
+}
+func (h *HTTPRequest) Execute(ctx context.ExecutionContext) (context.Payload, error) {
 	// url
 	urlstring, err := h.buildURL(ctx)
 	if err != nil {
@@ -42,15 +45,15 @@ func (h *HTTPInput) Read(ctx context.ExecutionContext) (context.Payload, error) 
 
 	// request method
 	method := "GET"
-	if h.Request.Method != nil {
-		method = *h.Request.Method
+	if h.Method != nil {
+		method = *h.Method
 	}
 	method = strings.ToUpper(method)
 
 	// request body
 	var body io.Reader
-	if method != "GET" && h.Request.Body != nil {
-		s, err := h.Request.Body.String(ctx)
+	if method != "GET" && h.Body != nil {
+		s, err := h.Body.String(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -64,9 +67,9 @@ func (h *HTTPInput) Read(ctx context.ExecutionContext) (context.Payload, error) 
 	}
 
 	// add request headers
-	if h.Request.Headers != nil {
-		for _, key := range h.Request.Headers.Keys() {
-			value, err := h.Request.Headers.StringByKey(ctx, key)
+	if h.Headers != nil {
+		for _, key := range h.Headers.Keys() {
+			value, err := h.Headers.StringByKey(ctx, key)
 			if err != nil {
 				return nil, err
 			}
@@ -106,24 +109,24 @@ func (h *HTTPInput) Read(ctx context.ExecutionContext) (context.Payload, error) 
 	return payload, nil
 }
 
-func (h *HTTPInput) buildURL(ctx context.ExecutionContext) (string, error) {
-	if h.Request.URL != nil {
-		return *h.Request.URL, nil
+func (h *HTTPRequest) buildURL(ctx context.ExecutionContext) (string, error) {
+	if h.URL != nil {
+		return *h.URL, nil
 	}
-	if h.Request.Host == nil {
+	if h.Host == nil {
 		return "", errors.New("host is required")
 	}
 	scheme := "http"
-	if h.Request.Scheme != nil {
-		scheme = *h.Request.Scheme
+	if h.Scheme != nil {
+		scheme = *h.Scheme
 	}
 	port := 80
-	if h.Request.Port != nil {
-		port = *h.Request.Port
+	if h.Port != nil {
+		port = *h.Port
 	}
 	path := ""
-	if h.Request.Path != nil {
-		p, err := h.Request.Path.String(ctx)
+	if h.Path != nil {
+		p, err := h.Path.String(ctx)
 		if err != nil {
 			return "", err
 		}
@@ -133,9 +136,9 @@ func (h *HTTPInput) buildURL(ctx context.ExecutionContext) (string, error) {
 		}
 	}
 	queryParams := url.Values{}
-	if h.Request.Params != nil {
-		for _, key := range h.Request.Params.Keys() {
-			v, err := h.Request.Params.StringByKey(ctx, key)
+	if h.Params != nil {
+		for _, key := range h.Params.Keys() {
+			v, err := h.Params.StringByKey(ctx, key)
 			if err != nil {
 				return "", err
 			}
@@ -146,5 +149,5 @@ func (h *HTTPInput) buildURL(ctx context.ExecutionContext) (string, error) {
 	if len(queryParams) > 0 {
 		q = "?" + queryParams.Encode()
 	}
-	return fmt.Sprintf("%s://%s:%d/%s%s", scheme, *h.Request.Host, port, path, q), nil
+	return fmt.Sprintf("%s://%s:%d/%s%s", scheme, *h.Host, port, path, q), nil
 }
