@@ -14,8 +14,7 @@ type Watcher struct {
 }
 
 type WatchJob struct {
-	w        *Watch
-	schedule string
+	w *Watch
 }
 
 func New(globalConfig *config.Config) *Watcher {
@@ -31,11 +30,17 @@ func (a *WatchJob) Run() {
 	}
 }
 
-func (w *Watcher) AddWatch(watchConfig *WatchConfig) {
-	w.scheduler.AddTask(watchConfig.Trigger.Schedule, &WatchJob{
-		NewWatch(w.globalConfig, watchConfig),
-		*watchConfig.Trigger.Schedule.Cron,
-	})
+func (w *Watcher) AddWatch(watchConfig *WatchConfig) error {
+	schedules, err := watchConfig.Trigger.Schedule.CronSchedules()
+	if err != nil {
+		return err
+	}
+	for _, s := range schedules {
+		if err := w.scheduler.AddTask(s, &WatchJob{NewWatch(w.globalConfig, watchConfig)}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (w *Watcher) Start() {

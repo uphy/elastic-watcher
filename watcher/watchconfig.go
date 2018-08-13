@@ -10,19 +10,17 @@ import (
 	"github.com/uphy/elastic-watcher/watcher/condition"
 	"github.com/uphy/elastic-watcher/watcher/input"
 	"github.com/uphy/elastic-watcher/watcher/transform"
+	"github.com/uphy/elastic-watcher/watcher/trigger"
 )
 
 type (
 	WatchConfig struct {
 		Metadata  map[string]interface{} `json:"metadata"`
-		Trigger   Trigger                `json:"trigger"`
+		Trigger   trigger.Trigger        `json:"trigger"`
 		Input     input.Input            `json:"input"`
 		Condition condition.Conditions   `json:"condition"`
 		Transform *transform.Transform   `json:"transform"`
 		Actions   actions.Actions        `json:"actions"`
-	}
-	Trigger struct {
-		Schedule *Schedule `json:"schedule"`
 	}
 )
 

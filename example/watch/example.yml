@@ -4,7 +4,10 @@ metadata:
 
 trigger:
   schedule:
-    cron: '@every 10s'
+    hourly:
+      minute:
+      - 5
+      - 6
 
 input:
   chain:
