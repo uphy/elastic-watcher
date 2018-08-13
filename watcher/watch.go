@@ -17,7 +17,7 @@ func NewWatch(globalConfig *config.Config, c *WatchConfig) *Watch {
 
 func (w *Watch) Run() error {
 	// clear state
-	w.ctx.SetPayload(nil)
+	w.ctx.SetPayload(map[string]interface{}{})
 
 	// input
 	data, err := w.c.Input.Read(w.ctx)
@@ -37,11 +37,10 @@ func (w *Watch) Run() error {
 
 	// transform
 	if w.c.Transform != nil {
-		data, err := w.c.Transform.Read(w.ctx)
+		err := w.c.Transform.Transform(w.ctx)
 		if err != nil {
 			return w.wrapError("transform", err)
 		}
-		w.ctx.SetPayload(data)
 	}
 
 	// run actions

@@ -93,5 +93,5 @@ func (a *Array) UnmarshalJSON(data []byte) error {
 		*a = Array{o}
 		return nil
 	}
-	return errors.New("unsupported format: " + string(data))
+	return errors.New("unsupported format array: " + string(data))
 }

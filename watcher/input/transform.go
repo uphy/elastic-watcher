@@ -1,18 +1,17 @@
 package input
 
 import (
-	"errors"
-
 	"github.com/uphy/elastic-watcher/watcher/context"
+	"github.com/uphy/elastic-watcher/watcher/transform"
 )
 
-type Transform struct {
-	Script *context.Script `json:"script"`
+type TransformInput struct {
+	transform.Transform
 }
 
-func (t *Transform) Read(ctx context.ExecutionContext) (interface{}, error) {
-	if t.Script == nil {
-		return nil, errors.New("`script` not defined at `transform`")
+func (t *TransformInput) Read(ctx context.ExecutionContext) (context.Payload, error) {
+	if err := t.Transform.Transform(ctx); err != nil {
+		return nil, err
 	}
-	return t.Script.Value(ctx)
+	return ctx.Payload(), nil
 }

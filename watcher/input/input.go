@@ -13,10 +13,10 @@ type Input struct {
 }
 
 type Reader interface {
-	Read(ctx context.ExecutionContext) (interface{}, error)
+	Read(ctx context.ExecutionContext) (context.Payload, error)
 }
 
-func (i *Input) Read(ctx context.ExecutionContext) (interface{}, error) {
+func (i *Input) Read(ctx context.ExecutionContext) (context.Payload, error) {
 	return i.reader.Read(ctx)
 }
 
@@ -50,15 +50,15 @@ func (i *Input) UnmarshalJSON(data []byte) error {
 		var reader Reader
 		switch name {
 		case "search":
-			reader = &Search{}
+			reader = &SearchInput{}
 		case "simple":
-			reader = &Simple{}
-		case "chain":
-			reader = &Chain{}
+			reader = &SimpleInput{}
 		case "transform":
-			reader = &Transform{}
+			reader = &TransformInput{}
 		case "http":
-			reader = &HTTP{}
+			reader = &HTTPInput{}
+		case "chain":
+			reader = &ChainInput{}
 		default:
 			return errors.New("unsupported input: " + name)
 		}

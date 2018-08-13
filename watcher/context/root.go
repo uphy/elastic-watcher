@@ -13,7 +13,7 @@ type (
 		executionTime time.Time
 		trigger       Trigger
 		metadata      map[string]interface{}
-		payload       interface{}
+		payload       Payload
 		vars          interface{}
 		globalConfig  *config.Config
 	}
@@ -65,11 +65,11 @@ func (e *rootExecutionContext) SetVars(vars interface{}) {
 	e.vars = vars
 }
 
-func (e *rootExecutionContext) Payload() interface{} {
+func (e *rootExecutionContext) Payload() Payload {
 	return e.payload
 }
 
-func (e *rootExecutionContext) SetPayload(payload interface{}) {
+func (e *rootExecutionContext) SetPayload(payload Payload) {
 	e.payload = payload
 }
 

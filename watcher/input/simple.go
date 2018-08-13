@@ -2,8 +2,10 @@ package input
 
 import "github.com/uphy/elastic-watcher/watcher/context"
 
-type Simple map[string]interface{}
+type SimpleInput struct {
+	context.Payload
+}
 
-func (s *Simple) Read(ctx context.ExecutionContext) (interface{}, error) {
-	return s, nil
+func (s SimpleInput) Read(ctx context.ExecutionContext) (context.Payload, error) {
+	return s.Payload, nil
 }

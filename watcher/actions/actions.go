@@ -45,11 +45,10 @@ func (a *actionContainer) run(ctx context.ExecutionContext) error {
 		}
 	}
 	if a.transform != nil {
-		v, err := a.transform.Read(ctx)
+		err := a.transform.Transform(ctx)
 		if err != nil {
 			return err
 		}
-		ctx.SetPayload(v)
 	}
 	if err := a.action.Run(ctx); err != nil {
 		return err

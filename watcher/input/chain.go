@@ -4,17 +4,24 @@ import (
 	"github.com/uphy/elastic-watcher/watcher/context"
 )
 
-type Chain struct {
-	Inputs []Input `json:"inputs"`
+type ChainInput struct {
+	Inputs []NamedInput `json:"inputs"`
 }
 
-func (c *Chain) Read(ctx context.ExecutionContext) (interface{}, error) {
-	for _, input := range c.Inputs {
-		r, err := input.Read(ctx)
-		if err != nil {
-			return nil, err
+type NamedInput map[string]Input
+
+func (i *ChainInput) Read(ctx context.ExecutionContext) (context.Payload, error) {
+	p := map[string]interface{}{}
+	for _, input := range i.Inputs {
+		for name, t := range input {
+			ctxForInput := context.Wrap(ctx)
+			v, err := t.Read(ctxForInput)
+			if err != nil {
+				return nil, err
+			}
+			p[name] = v
+			ctx.SetPayload(p)
 		}
-		ctx.SetPayload(r)
 	}
 	return ctx.Payload(), nil
 }

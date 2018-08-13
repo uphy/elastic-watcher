@@ -15,7 +15,7 @@ import (
 )
 
 type (
-	HTTP struct {
+	HTTPInput struct {
 		Request HTTPRequest `json:"request"`
 	}
 	HTTPRequest struct {
@@ -33,7 +33,7 @@ type (
 	}
 )
 
-func (h *HTTP) Read(ctx context.ExecutionContext) (interface{}, error) {
+func (h *HTTPInput) Read(ctx context.ExecutionContext) (context.Payload, error) {
 	// url
 	urlstring, err := h.buildURL(ctx)
 	if err != nil {
@@ -106,7 +106,7 @@ func (h *HTTP) Read(ctx context.ExecutionContext) (interface{}, error) {
 	return payload, nil
 }
 
-func (h *HTTP) buildURL(ctx context.ExecutionContext) (string, error) {
+func (h *HTTPInput) buildURL(ctx context.ExecutionContext) (string, error) {
 	if h.Request.URL != nil {
 		return *h.Request.URL, nil
 	}

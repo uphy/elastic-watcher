@@ -12,53 +12,55 @@ trigger:
 input:
   chain:
     inputs:
-    - http:
-        request:
-          host: localhost
-          port: 9200
-          method: GET
-    - transform:
-        script:
-          id: hello
-          params:
-            username: uphy
-    - search:
-        request:
-          body:
-            query:
-              match_all: {}
-            size: 0
-          indices:
-          - "<metricbeat-6.3.2-{now-1h}>"
-          - "<metricbeat-6.3.2-{now}>"
-    - transform:
-        script: |
-          ctx.payload
+    - http-test:
+        http:
+          request:
+            host: localhost
+            port: 9200
+            method: GET
+    - storedscript:
+        transform:
+          script:
+            id: hello
+            params:
+              username: uphy
+    - print-storedscript:
+        transform:
+          script: |
+            console.log(ctx.payload.storedscript)
+    - searchall:
+        search:
+          request:
+            body:
+              query:
+                match_all: {}
+              size: 0
+            indices:
+            - "<metricbeat-6.3.2-{now-1h}>"
+            - "<metricbeat-6.3.2-{now}>"
 
 condition:
   compare:
-    ctx.payload.hits.total:
+    ctx.payload.searchall.hits.total:
       gte: 10
   script:
     lang: javascript
     params: null
     source: |
-      ctx.payload.hits.total > 100
+      ctx.payload.searchall.hits.total > 100
 
 transform:
   chain:
-    inputs:
-    - search:
-        request:
-          body:
-            query:
-              match_all: {}
-            size: 0
-          indices:
-          - "*"
-    - transform:
-        script: |
-          ctx.payload
+  - search:
+      request:
+        body:
+          query:
+            match_all: {}
+          size: 0
+        indices:
+        - "*"
+  - script: |
+      ctx.payload
 
 actions:
   my-logging-action:

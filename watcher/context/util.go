@@ -70,7 +70,7 @@ func RunScript(ctx ExecutionContext, script string, params map[string]interface{
 	return v, nil
 }
 
-func Search(ctx ExecutionContext, indices []string, query interface{}) (interface{}, error) {
+func Search(ctx ExecutionContext, indices []string, query interface{}) (map[string]interface{}, error) {
 	client := &http.Client{
 		Transport: http.DefaultTransport,
 	}

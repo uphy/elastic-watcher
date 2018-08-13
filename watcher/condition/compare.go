@@ -75,7 +75,7 @@ func (c *Compare) Match(field string, ctx context.ExecutionContext) (bool, error
 		}
 	}
 	if c.GTE != nil {
-		s, err := c.GT.String(ctx)
+		s, err := c.GTE.String(ctx)
 		if err != nil {
 			return false, err
 		}

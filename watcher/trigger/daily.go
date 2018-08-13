@@ -126,7 +126,7 @@ func (t *Times) UnmarshalJSON(data []byte) error {
 		*t = Times{single}
 		return nil
 	}
-	return errors.New("unsupported format: " + string(data))
+	return errors.New("unsupported format times: " + string(data))
 }
 
 func parseTime(s string) (hour int, minute int, err error) {

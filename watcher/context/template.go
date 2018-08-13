@@ -68,7 +68,15 @@ func (t *TemplateValue) UnmarshalJSON(data []byte) error {
 		}
 		return nil
 	}
-	return errors.New("unsupported format")
+	var n json.Number
+	if err := json.Unmarshal(data, &n); err == nil {
+		source := n.String()
+		*t = TemplateValue{
+			Source: &source,
+		}
+		return nil
+	}
+	return errors.New("unsupported format template value: " + string(data))
 }
 
 func (t TemplateValues) String(ctx ExecutionContext, index int) (string, error) {
@@ -186,5 +194,5 @@ func (t *TemplateValues) UnmarshalJSON(data []byte) error {
 		*t = tt
 		return nil
 	}
-	return errors.New("unsupported format on TemplateValues:" + string(data))
+	return errors.New("unsupported format template values:" + string(data))
 }

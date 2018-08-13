@@ -1,18 +1,19 @@
 package input
 
-import "github.com/uphy/elastic-watcher/watcher/context"
+import (
+	"github.com/uphy/elastic-watcher/watcher/context"
+	"github.com/uphy/elastic-watcher/watcher/transform"
+)
 
 type (
-	Search struct {
-		Request Request `json:"request"`
-	}
-
-	Request struct {
-		Body    interface{} `json:"body"`
-		Indices []string    `json:"indices"`
+	SearchInput struct {
+		transform.SearchTransformer
 	}
 )
 
-func (s Search) Read(ctx context.ExecutionContext) (interface{}, error) {
-	return context.Search(ctx, s.Request.Indices, s.Request.Body)
+func (s SearchInput) Read(ctx context.ExecutionContext) (context.Payload, error) {
+	if err := s.Transform(ctx); err != nil {
+		return nil, err
+	}
+	return ctx.Payload(), nil
 }

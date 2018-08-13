@@ -4,6 +4,6 @@ scripts:
   hello:
     lang: javascript
     source: |
-      console.log('hello ' + username)
+      'hello ' + username
   template1:
     source: "hello {{ username }}"

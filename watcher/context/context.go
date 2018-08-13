@@ -14,10 +14,11 @@ type (
 		Metadata() interface{}
 		Vars() interface{}
 		SetVars(vars interface{})
-		Payload() interface{}
-		SetPayload(payload interface{})
+		Payload() Payload
+		SetPayload(payload Payload)
 		GlobalConfig() *config.Config
 	}
+	Payload interface{}
 	Trigger struct {
 		TriggeredTime time.Time `json:"triggered_time"`
 		ScheduledTime time.Time `json:"scheduled_time"`

@@ -8,7 +8,7 @@ import (
 
 type scopedExecutionContext struct {
 	ctx     ExecutionContext
-	payload interface{}
+	payload Payload
 	vars    interface{}
 }
 
@@ -38,10 +38,10 @@ func (s *scopedExecutionContext) Vars() interface{} {
 func (s *scopedExecutionContext) SetVars(vars interface{}) {
 	s.vars = vars
 }
-func (s *scopedExecutionContext) Payload() interface{} {
+func (s *scopedExecutionContext) Payload() Payload {
 	return s.payload
 }
-func (s *scopedExecutionContext) SetPayload(payload interface{}) {
+func (s *scopedExecutionContext) SetPayload(payload Payload) {
 	s.payload = payload
 }
 func (s *scopedExecutionContext) GlobalConfig() *config.Config {
