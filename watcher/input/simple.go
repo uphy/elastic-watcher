@@ -3,9 +3,10 @@ package input
 import "github.com/uphy/elastic-watcher/watcher/context"
 
 type SimpleInput struct {
-	context.Payload
+	context.JSONObject
 }
 
-func (s SimpleInput) Read(ctx context.ExecutionContext) (context.Payload, error) {
-	return s.Payload, nil
+func (s SimpleInput) Run(ctx context.ExecutionContext) error {
+	ctx.SetPayload(s.JSONObject)
+	return nil
 }

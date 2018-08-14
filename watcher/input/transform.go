@@ -9,9 +9,6 @@ type TransformInput struct {
 	transform.Transform
 }
 
-func (t *TransformInput) Read(ctx context.ExecutionContext) (context.Payload, error) {
-	if err := t.Transform.Transform(ctx); err != nil {
-		return nil, err
-	}
-	return ctx.Payload(), nil
+func (t *TransformInput) Run(ctx context.ExecutionContext) error {
+	return t.Transform.Run(ctx)
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/uphy/elastic-watcher/watcher/context"
 )
 
-func TestHTTPRead(t *testing.T) {
+func TestHTTPRun(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/json", func(resp http.ResponseWriter, req *http.Request) {
 		resp.Header().Add("Content-Type", "application/json")
@@ -35,16 +35,16 @@ func TestHTTPRead(t *testing.T) {
 		}
 	}
 	`
-	var httpInput HTTP
+	var httpInput HTTPInput
 	if err := json.Unmarshal([]byte(req), &httpInput); err != nil {
 		t.Error(err)
 	}
 	ctx := context.TODO()
-	v, err := httpInput.Read(ctx)
+	err := httpInput.Run(ctx)
 	if err != nil {
 		t.Error(err)
 	}
-	vv, ok := v.(map[string]interface{})
+	vv, ok := ctx.Payload().(map[string]interface{})
 	if !ok {
 		t.Error("unexpected response type")
 	}

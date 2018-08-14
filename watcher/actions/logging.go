@@ -1,7 +1,7 @@
 package actions
 
 import (
-	"log"
+	"strings"
 
 	"github.com/uphy/elastic-watcher/watcher/context"
 )
@@ -15,6 +15,8 @@ func (l *LoggingAction) Run(ctx context.ExecutionContext) error {
 	if err != nil {
 		return err
 	}
-	log.Println(s)
+	for _, ss := range strings.Split(s, "\n") {
+		ctx.Logger().Info(ss)
+	}
 	return nil
 }

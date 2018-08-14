@@ -13,7 +13,7 @@ type (
 	}
 )
 
-func (s SearchTransformer) Transform(ctx context.ExecutionContext) error {
+func (s *SearchTransformer) Run(ctx context.ExecutionContext) error {
 	v, err := context.Search(ctx, s.Request.Indices, s.Request.Body)
 	if err != nil {
 		return err

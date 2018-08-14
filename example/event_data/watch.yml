@@ -1,0 +1,66 @@
+trigger:
+  schedule:
+    interval: 10m
+
+input:
+  chain:
+    inputs:
+    - searchevents:
+        search:
+          request:
+            indices:
+            - "<metricbeat-*-{now-3h}>"
+            - "<metricbeat-*-{now}>"
+            body:
+              size: 0
+              query:
+                bool:
+                  filter:
+                  - range:
+                      "@timestamp":
+                        gte: "now-3h"
+                  - match:
+                      "metricset.module": system
+                  - match:
+                      "metricset.name": cpu
+              aggs:
+                group_by_host:
+                  terms:
+                    field: beat.hostname
+                    size: 100
+                  aggs:
+                    cpu:
+                      avg:
+                        field: system.cpu.total.pct
+    - splitevents:
+        transform:
+          script: |
+            var buckets = ctx.payload.searchevents.aggregations.group_by_host.buckets;
+            var splitted = buckets.map(function(b) {
+              return {
+                cpu: b.cpu.value,
+                host: b.key
+              }
+            });
+            splitted.push({
+              cpu: 0.9,
+              host: "myhost"
+            })
+            split(splitted);
+            ctx.payload
+
+actions:
+  log:
+    throttle_period: 10m
+    condition: 
+      compare:
+        ctx.payload.cpu:
+          gt: 0.001
+    logging:
+      text: |
+        hogehogehoge
+        ---
+        Host: {{ ctx.payload.host }}
+        CPU: {{ ctx.payload.cpu }}
+        ---
+        {{#toJson}}ctx.payload{{/toJson}}

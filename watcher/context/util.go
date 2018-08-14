@@ -11,6 +11,7 @@ import (
 
 	"github.com/frohmut/mustache"
 	"github.com/robertkrimen/otto"
+	"github.com/rs/xid"
 )
 
 func data(ctx ExecutionContext) (map[string]interface{}, error) {
@@ -59,6 +60,21 @@ func renderTemplate(ctx ExecutionContext, template string, params map[string]int
 	return mustache.Render(template, p)
 }
 
+func setSplittedPayload(ctx ExecutionContext, v []JSONObject) {
+	ctx.Vars()["__splitted__"] = v
+}
+
+func consumeSplittedPayload(ctx ExecutionContext) []JSONObject {
+	vars := ctx.Vars()
+	splitted, exist := vars["__splitted__"]
+	if !exist {
+		return nil
+	}
+	casted := splitted.([]JSONObject)
+	delete(vars, "__splitted__")
+	return casted
+}
+
 func RunScript(ctx ExecutionContext, script string, params map[string]interface{}) (otto.Value, error) {
 	// initialize javascript engine
 	vm := otto.New()
@@ -69,6 +85,26 @@ func RunScript(ctx ExecutionContext, script string, params map[string]interface{
 		return otto.NullValue(), err
 	}
 	if err := vm.Set("ctx", ctxData); err != nil {
+		return otto.NullValue(), err
+	}
+	if err := vm.Set("split", func(call otto.FunctionCall) otto.Value {
+		if len(call.ArgumentList) != 1 {
+			panic(call.Otto.MakeRangeError("splitted payload is required."))
+		}
+		splitted := call.Argument(0)
+		s, _ := splitted.Export()
+		casted, ok := s.([]map[string]interface{})
+		if !ok {
+			panic(call.Otto.MakeTypeError("splitted payload must be an object array"))
+		}
+
+		jsonObjects := []JSONObject{}
+		for _, elm := range casted {
+			jsonObjects = append(jsonObjects, JSONObject(elm))
+		}
+		setSplittedPayload(ctx, jsonObjects)
+		return otto.UndefinedValue()
+	}); err != nil {
 		return otto.NullValue(), err
 	}
 	if params != nil {
@@ -114,4 +150,8 @@ func Search(ctx ExecutionContext, indices []string, query interface{}) (map[stri
 		return nil, err
 	}
 	return m, nil
+}
+
+func generateID() string {
+	return xid.New().String()
 }

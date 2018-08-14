@@ -4,6 +4,9 @@ scripts:
   hello:
     lang: javascript
     source: |
-      'hello ' + username
+      var obj = { 
+        msg: "hello " + username 
+      }
+      obj
   template1:
-    source: "hello {{ username }}"
+    source: "hello {{ username }} from template"

@@ -10,18 +10,21 @@ type ChainInput struct {
 
 type NamedInput map[string]Input
 
-func (i *ChainInput) Read(ctx context.ExecutionContext) (context.Payload, error) {
+func (i *ChainInput) Run(ctx context.ExecutionContext) error {
 	p := map[string]interface{}{}
+	ctx.SetPayload(p)
 	for _, input := range i.Inputs {
 		for name, t := range input {
-			ctxForInput := context.Wrap(ctx)
-			v, err := t.Read(ctxForInput)
-			if err != nil {
-				return nil, err
+			if err := ctx.TaskRunner().Run(&t); err != nil {
+				return err
 			}
-			p[name] = v
+			payload, err := ctx.Payload().Clone()
+			if err != nil {
+				return err
+			}
+			p[name] = payload
 			ctx.SetPayload(p)
 		}
 	}
-	return ctx.Payload(), nil
+	return nil
 }

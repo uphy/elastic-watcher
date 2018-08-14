@@ -11,27 +11,23 @@ type (
 		Search *SearchTransformer `json:"search,omitempty"`
 	}
 	Transformer interface {
-		Transform(ctx context.ExecutionContext) error
+		context.Task
 	}
 )
 
-func (t *Transform) Transform(ctx context.ExecutionContext) error {
-	var err error
-	if t.Search != nil {
-		err = t.Search.Transform(ctx)
-		if err != nil {
-			return err
-		}
+func (t *Transform) Run(ctx context.ExecutionContext) error {
+	transformers := []Transformer{}
+	if t.Chain != nil {
+		transformers = append(transformers, t.Chain)
 	}
 	if t.Script != nil {
-		err = t.Script.Transform(ctx)
-		if err != nil {
-			return err
-		}
+		transformers = append(transformers, t.Script)
 	}
-	if t.Chain != nil {
-		err = t.Chain.Transform(ctx)
-		if err != nil {
+	if t.Search != nil {
+		transformers = append(transformers, t.Search)
+	}
+	for _, transformer := range transformers {
+		if err := transformer.Run(ctx); err != nil {
 			return err
 		}
 	}

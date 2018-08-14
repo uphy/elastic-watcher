@@ -27,7 +27,7 @@ input:
     - print-storedscript:
         transform:
           script: |
-            console.log(ctx.payload.storedscript)
+            console.log(ctx.payload.storedscript.msg)
     - searchall:
         search:
           request:

@@ -11,9 +11,6 @@ type (
 	}
 )
 
-func (s SearchInput) Read(ctx context.ExecutionContext) (context.Payload, error) {
-	if err := s.Transform(ctx); err != nil {
-		return nil, err
-	}
-	return ctx.Payload(), nil
+func (s SearchInput) Run(ctx context.ExecutionContext) error {
+	return s.SearchTransformer.Run(ctx)
 }

@@ -3,53 +3,48 @@ package watcher
 import (
 	"github.com/pkg/errors"
 	"github.com/uphy/elastic-watcher/config"
+	"github.com/uphy/elastic-watcher/watcher/condition"
 	"github.com/uphy/elastic-watcher/watcher/context"
 )
 
 type Watch struct {
-	c   *WatchConfig
-	ctx context.ExecutionContext
+	c            *WatchConfig
+	globalConfig *config.Config
 }
 
 func NewWatch(globalConfig *config.Config, c *WatchConfig) *Watch {
-	return &Watch{c, context.New(globalConfig, c.Metadata)}
+	return &Watch{c, globalConfig}
 }
 
 func (w *Watch) Run() error {
 	// clear state
-	w.ctx.SetPayload(map[string]interface{}{})
+	ctx := context.New(w.globalConfig, w.c.Metadata)
+	runner := ctx.TaskRunner()
 
 	// input
-	data, err := w.c.Input.Read(w.ctx)
-	if err != nil {
-		return w.wrapError("input", err)
+	if err := runner.Run(&w.c.Input); err != nil {
+		return w.wrapError(ctx, "input", err)
 	}
-	w.ctx.SetPayload(data)
 
 	// check condition
-	matched, err := w.c.Condition.Match(w.ctx)
-	if err != nil {
-		return w.wrapError("condition", err)
-	}
-	if !matched {
-		return nil
+	if err := runner.Run(condition.NewTask(w.c.Condition)); err != nil {
+		return w.wrapError(ctx, "condition", err)
 	}
 
 	// transform
 	if w.c.Transform != nil {
-		err := w.c.Transform.Transform(w.ctx)
-		if err != nil {
-			return w.wrapError("transform", err)
+		if err := runner.Run(w.c.Transform); err != nil {
+			return w.wrapError(ctx, "transform", err)
 		}
 	}
 
 	// run actions
-	return w.wrapError("action", w.c.Actions.Run(w.ctx))
+	return w.wrapError(ctx, "action", runner.Run(w.c.Actions))
 }
 
-func (w *Watch) wrapError(phase string, err error) error {
+func (w *Watch) wrapError(ctx context.ExecutionContext, phase string, err error) error {
 	if err == nil {
 		return nil
 	}
-	return errors.Wrapf(err, "failed to run watch(id='%s') at '%s'", w.ctx.WatchID(), phase)
+	return errors.Wrapf(err, "failed to run watch(id='%s') at '%s'", ctx.WatchID(), phase)
 }

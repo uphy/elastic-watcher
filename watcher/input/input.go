@@ -13,11 +13,11 @@ type Input struct {
 }
 
 type Reader interface {
-	Read(ctx context.ExecutionContext) (context.Payload, error)
+	context.Task
 }
 
-func (i *Input) Read(ctx context.ExecutionContext) (context.Payload, error) {
-	return i.reader.Read(ctx)
+func (i *Input) Run(ctx context.ExecutionContext) error {
+	return i.reader.Run(ctx)
 }
 
 func (i Input) MarshalJSON() ([]byte, error) {

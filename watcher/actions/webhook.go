@@ -10,6 +10,6 @@ type WebhookAction struct {
 }
 
 func (w *WebhookAction) Run(ctx context.ExecutionContext) error {
-	_, err := w.Execute(ctx)
+	err := w.Execute(ctx)
 	return err
 }

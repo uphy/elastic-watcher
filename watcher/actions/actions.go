@@ -14,7 +14,7 @@ import (
 
 type (
 	Action interface {
-		Run(ctx context.ExecutionContext) error
+		context.Task
 	}
 
 	actionContainer struct {
@@ -23,7 +23,8 @@ type (
 		condition      *condition.Conditions
 		transform      *transform.Transform
 		throttlePeriod *Duration
-		lastAlert      time.Time
+		// lastAlert is a map from context id to last action time
+		lastAlert map[string]time.Time
 	}
 
 	Actions map[string]*actionContainer
@@ -31,8 +32,10 @@ type (
 
 func (a *actionContainer) run(ctx context.ExecutionContext) error {
 	if a.throttlePeriod != nil {
-		if time.Now().Before(a.lastAlert.Add(a.throttlePeriod.Duration)) {
-			return nil
+		if lastAlert, ok := a.lastAlert[ctx.ID()]; ok {
+			if time.Now().Before(lastAlert.Add(a.throttlePeriod.Duration)) {
+				return nil
+			}
 		}
 	}
 	if a.condition != nil {
@@ -45,7 +48,7 @@ func (a *actionContainer) run(ctx context.ExecutionContext) error {
 		}
 	}
 	if a.transform != nil {
-		err := a.transform.Transform(ctx)
+		err := a.transform.Run(ctx)
 		if err != nil {
 			return err
 		}
@@ -53,14 +56,18 @@ func (a *actionContainer) run(ctx context.ExecutionContext) error {
 	if err := a.action.Run(ctx); err != nil {
 		return err
 	}
-	a.lastAlert = time.Now()
+	a.lastAlert[ctx.ID()] = time.Now()
 	return nil
 }
 
 func (a Actions) Run(ctx context.ExecutionContext) error {
 	var errs error
 	for name, action := range a {
-		if err := action.run(context.Wrap(ctx)); err != nil {
+		wrappedCtx, err := context.Wrap(ctx)
+		if err != nil {
+			return err
+		}
+		if err := action.run(wrappedCtx); err != nil {
 			errs = multierror.Append(errs, errors.Wrap(err, "failed to execute action: "+name))
 		}
 	}
@@ -74,7 +81,9 @@ func (a *Actions) UnmarshalJSON(data []byte) (err error) {
 	}
 	actions := map[string]*actionContainer{}
 	for name, typeAndOptions := range m {
-		a := &actionContainer{}
+		a := &actionContainer{
+			lastAlert: map[string]time.Time{},
+		}
 		for typ, options := range typeAndOptions {
 			b, err := json.Marshal(options)
 			if err != nil {

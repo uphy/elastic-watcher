@@ -6,9 +6,9 @@ import (
 
 type ChainTransformer []Transform
 
-func (c ChainTransformer) Transform(ctx context.ExecutionContext) error {
+func (c ChainTransformer) Run(ctx context.ExecutionContext) error {
 	for _, t := range c {
-		err := t.Transform(ctx)
+		err := t.Run(ctx)
 		if err != nil {
 			return err
 		}

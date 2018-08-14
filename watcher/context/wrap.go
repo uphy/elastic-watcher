@@ -1,53 +1,37 @@
 package context
 
-import (
-	"time"
-
-	"github.com/Sirupsen/logrus"
-	"github.com/uphy/elastic-watcher/config"
-)
-
 type scopedExecutionContext struct {
-	ctx     ExecutionContext
-	payload Payload
-	vars    interface{}
+	ExecutionContext
+	id      string
+	payload JSONObject
+	vars    JSONObject
 }
 
-func newScopedContext(ctx ExecutionContext) ExecutionContext {
-	return &scopedExecutionContext{
-		ctx:     ctx,
-		payload: ctx.Payload(),
-		vars:    ctx.Vars(),
+func newScopedContext(ctx ExecutionContext) (ExecutionContext, error) {
+	payload, err := ctx.Payload().Clone()
+	if err != nil {
+		return nil, err
 	}
+	vars, err := ctx.Vars().Clone()
+	return &scopedExecutionContext{
+		ExecutionContext: ctx,
+		id:               generateID(),
+		payload:          payload,
+		vars:             vars,
+	}, nil
 }
-
-func (s *scopedExecutionContext) WatchID() string {
-	return s.ctx.WatchID()
+func (s *scopedExecutionContext) ID() string {
+	return s.id
 }
-func (s *scopedExecutionContext) ExecutionTime() time.Time {
-	return s.ctx.ExecutionTime()
-}
-func (s *scopedExecutionContext) Trigger() Trigger {
-	return s.ctx.Trigger()
-}
-func (s *scopedExecutionContext) Metadata() interface{} {
-	return s.ctx.Metadata()
-}
-func (s *scopedExecutionContext) Vars() interface{} {
+func (s *scopedExecutionContext) Vars() JSONObject {
 	return s.vars
 }
-func (s *scopedExecutionContext) SetVars(vars interface{}) {
+func (s *scopedExecutionContext) SetVars(vars JSONObject) {
 	s.vars = vars
 }
-func (s *scopedExecutionContext) Payload() Payload {
+func (s *scopedExecutionContext) Payload() JSONObject {
 	return s.payload
 }
-func (s *scopedExecutionContext) SetPayload(payload Payload) {
+func (s *scopedExecutionContext) SetPayload(payload JSONObject) {
 	s.payload = payload
-}
-func (s *scopedExecutionContext) GlobalConfig() *config.Config {
-	return s.ctx.GlobalConfig()
-}
-func (s *scopedExecutionContext) Logger() *logrus.Logger {
-	return s.ctx.Logger()
 }

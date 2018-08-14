@@ -33,14 +33,14 @@ type (
 	}
 )
 
-func (h *HTTPInput) Read(ctx context.ExecutionContext) (context.Payload, error) {
+func (h *HTTPInput) Run(ctx context.ExecutionContext) error {
 	return h.Request.Execute(ctx)
 }
-func (h *HTTPRequest) Execute(ctx context.ExecutionContext) (context.Payload, error) {
+func (h *HTTPRequest) Execute(ctx context.ExecutionContext) error {
 	// url
 	urlstring, err := h.buildURL(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// request method
@@ -55,7 +55,7 @@ func (h *HTTPRequest) Execute(ctx context.ExecutionContext) (context.Payload, er
 	if method != "GET" && h.Body != nil {
 		s, err := h.Body.String(ctx)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		body = strings.NewReader(s)
 	}
@@ -63,7 +63,7 @@ func (h *HTTPRequest) Execute(ctx context.ExecutionContext) (context.Payload, er
 	// create http request
 	req, err := http.NewRequest(method, urlstring, body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// add request headers
@@ -71,14 +71,14 @@ func (h *HTTPRequest) Execute(ctx context.ExecutionContext) (context.Payload, er
 		for _, key := range h.Headers.Keys() {
 			value, err := h.Headers.StringByKey(ctx, key)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			req.Header.Add(key, value)
 		}
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
 	contentType, _, _ := mime.ParseMediaType(resp.Header.Get("Content-Type"))
@@ -86,12 +86,12 @@ func (h *HTTPRequest) Execute(ctx context.ExecutionContext) (context.Payload, er
 	payload := map[string]interface{}{}
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	switch contentType {
 	case "application/json", "text/json", "text/yaml", "text/x-yaml", "application/yaml", "application/x-yaml":
 		if err := yaml.Unmarshal(respBody, &payload); err != nil {
-			return nil, err
+			return err
 		}
 	default:
 		payload["_value"] = respBody
@@ -106,7 +106,8 @@ func (h *HTTPRequest) Execute(ctx context.ExecutionContext) (context.Payload, er
 	}
 	payload["_headers"] = payloadHeaders
 	payload["_status_code"] = resp.StatusCode
-	return payload, nil
+	ctx.SetPayload(payload)
+	return nil
 }
 
 func (h *HTTPRequest) buildURL(ctx context.ExecutionContext) (string, error) {

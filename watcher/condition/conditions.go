@@ -12,8 +12,26 @@ type (
 	Condition interface {
 		Match(ctx context.ExecutionContext) (bool, error)
 	}
-	Conditions map[string]Condition
+	Conditions     map[string]Condition
+	ConditionsTask struct {
+		c Conditions
+	}
 )
+
+func NewTask(c Conditions) context.Task {
+	return &ConditionsTask{c}
+}
+
+func (c *ConditionsTask) Run(ctx context.ExecutionContext) error {
+	matched, err := c.c.Match(ctx)
+	if err != nil {
+		return err
+	}
+	if !matched {
+		return context.ErrStop
+	}
+	return nil
+}
 
 func (c Conditions) Match(ctx context.ExecutionContext) (bool, error) {
 	for name, condition := range c {
