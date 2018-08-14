@@ -3,6 +3,7 @@ package context
 import (
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/uphy/elastic-watcher/config"
 )
 
@@ -46,4 +47,7 @@ func (s *scopedExecutionContext) SetPayload(payload Payload) {
 }
 func (s *scopedExecutionContext) GlobalConfig() *config.Config {
 	return s.ctx.GlobalConfig()
+}
+func (s *scopedExecutionContext) Logger() *logrus.Logger {
+	return s.ctx.Logger()
 }

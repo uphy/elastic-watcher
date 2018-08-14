@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/uphy/elastic-watcher/config"
 )
 
@@ -16,6 +17,7 @@ type (
 		payload       Payload
 		vars          interface{}
 		globalConfig  *config.Config
+		logger        *logrus.Logger
 	}
 )
 
@@ -29,6 +31,8 @@ func New(globalConfig *config.Config, metadata map[string]interface{}) Execution
 	id := currentID
 	currentID++
 	t := time.Now()
+	logger := logrus.New()
+
 	return &rootExecutionContext{
 		watchID:       fmt.Sprint(id),
 		executionTime: t,
@@ -38,6 +42,7 @@ func New(globalConfig *config.Config, metadata map[string]interface{}) Execution
 		},
 		metadata:     metadata,
 		globalConfig: globalConfig,
+		logger:       logger,
 	}
 }
 
@@ -75,4 +80,8 @@ func (e *rootExecutionContext) SetPayload(payload Payload) {
 
 func (e *rootExecutionContext) GlobalConfig() *config.Config {
 	return e.globalConfig
+}
+
+func (r *rootExecutionContext) Logger() *logrus.Logger {
+	return r.logger
 }

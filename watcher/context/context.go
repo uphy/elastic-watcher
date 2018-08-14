@@ -3,6 +3,7 @@ package context
 import (
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/uphy/elastic-watcher/config"
 )
 
@@ -17,6 +18,7 @@ type (
 		Payload() Payload
 		SetPayload(payload Payload)
 		GlobalConfig() *config.Config
+		Logger() *logrus.Logger
 	}
 	Payload interface{}
 	Trigger struct {

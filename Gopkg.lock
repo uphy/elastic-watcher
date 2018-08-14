@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/Sirupsen/logrus"
+  packages = ["."]
+  revision = "3e01752db0189b9157070a0e1668a620f9a85da2"
+  version = "v1.0.6"
+
+[[projects]]
   branch = "master"
   name = "github.com/frohmut/mustache"
   packages = ["."]
@@ -50,6 +56,18 @@
   version = "v1.20.0"
 
 [[projects]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+  packages = ["ssh/terminal"]
+  revision = "de0752318171da717af4ce24d0a2e8626afaeb11"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = ["unix","windows"]
+  revision = "98c5dad5d1a0e8a73845ecc8897d0bd56586511d"
+
+[[projects]]
   name = "gopkg.in/sourcemap.v1"
   packages = [".","base64vlq"]
   revision = "6e83acea0053641eff084973fee085f0c193c61a"
@@ -64,6 +82,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8fa85df90959cd5429218b0ff08f352f710cf72a7ba13fbe3256a8f8622e7ce5"
+  inputs-digest = "5528f409c3928a69e247324d3e784e6725688396e3319741f6575ba1c8027243"
   solver-name = "gps-cdcl"
   solver-version = 1
