@@ -14,8 +14,8 @@ import (
 	"github.com/rs/xid"
 )
 
-func data(ctx ExecutionContext) (JSONObject, error) {
-	v := JSONObject{}
+func data(ctx ExecutionContext) (map[string]interface{}, error) {
+	v := map[string]interface{}{}
 	v["watch_id"] = ctx.WatchID()
 	v["execution_time"] = ctx.ExecutionTime()
 	v["trigger"] = map[string]interface{}{
@@ -23,7 +23,7 @@ func data(ctx ExecutionContext) (JSONObject, error) {
 		"scheduled_time": ctx.Trigger().ScheduledTime,
 	}
 	v["metadata"] = ctx.Metadata()
-	v["payload"] = ctx.Payload()
+	v["payload"] = map[string]interface{}(ctx.Payload())
 	v["vars"] = ctx.Vars()
 	return v, nil
 }

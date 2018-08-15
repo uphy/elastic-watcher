@@ -31,10 +31,6 @@ type (
 	}
 )
 
-func Wrap(ctx ExecutionContext) (ExecutionContext, error) {
-	return newScopedContext(ctx)
-}
-
 func (j JSONObject) Clone() (JSONObject, error) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
@@ -57,4 +53,10 @@ func (j JSONObject) String() string {
 		return "<unabled to marshal JSONObject>"
 	}
 	return string(b)
+}
+
+func Init(ctx ExecutionContext) {
+	ctx.SetPayload(JSONObject{})
+	ctx.SetVars(JSONObject{})
+	ctx.TaskRunner().Init()
 }

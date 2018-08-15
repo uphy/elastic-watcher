@@ -20,7 +20,7 @@ func TestTemplateUnmarshal_SingleValue(t *testing.T) {
 		t.Errorf("want 1 but %d", foo.V.Size())
 	}
 	ctx := TODO()
-	ctx.SetPayload(map[string]string{
+	ctx.SetPayload(JSONObject{
 		"value": "foo",
 	})
 	v, err := foo.V.String(ctx, 0)
@@ -71,7 +71,7 @@ func TestTemplateUnmarshal_ArrayValue(t *testing.T) {
 		t.Errorf("want 2 but %d", foo.V.Size())
 	}
 	ctx := TODO()
-	ctx.SetPayload(map[string]string{
+	ctx.SetPayload(JSONObject{
 		"value1": "foo",
 		"value2": "bar",
 	})
@@ -109,7 +109,7 @@ func TestTemplateUnmarshal_MapValue(t *testing.T) {
 		t.Errorf("want 2 but %d", foo.V.Size())
 	}
 	ctx := TODO()
-	ctx.SetPayload(map[string]string{
+	ctx.SetPayload(JSONObject{
 		"value1": "foo",
 		"value2": "bar",
 	})

@@ -6,35 +6,41 @@ import (
 
 type scopedExecutionContext struct {
 	ExecutionContext
-	id      string
-	logger  *logrus.Entry
-	payload JSONObject
-	vars    JSONObject
+	id         string
+	logger     *logrus.Entry
+	payload    JSONObject
+	vars       JSONObject
+	taskRunner *TaskRunner
 }
 
-func newScopedContext(ctx ExecutionContext) (ExecutionContext, error) {
+func wrapContext(parent ExecutionContext, inheritTaskRunner bool) (ExecutionContext, error) {
 	id := generateID()
-	payload, err := ctx.Payload().Clone()
+	payload, err := parent.Payload().Clone()
 	if err != nil {
 		return nil, err
 	}
-	vars, err := ctx.Vars().Clone()
+	vars, err := parent.Vars().Clone()
 	if err != nil {
 		return nil, err
 	}
 
-	entry := ctx.Logger()
-	if ctx.GlobalConfig().Debug {
+	entry := parent.Logger()
+	if parent.GlobalConfig().Debug {
 		// overwrite id
 		entry = entry.WithField("id", id)
 	}
-	return &scopedExecutionContext{
-		ExecutionContext: ctx,
+	wrapped := &scopedExecutionContext{
+		ExecutionContext: parent,
 		id:               id,
 		payload:          payload,
 		vars:             vars,
 		logger:           entry,
-	}, nil
+	}
+	wrapped.taskRunner = parent.TaskRunner()
+	if !inheritTaskRunner {
+		wrapped.taskRunner = parent.TaskRunner().addWorker(wrapped)
+	}
+	return wrapped, nil
 }
 func (s *scopedExecutionContext) ID() string {
 	return s.id
@@ -53,4 +59,7 @@ func (s *scopedExecutionContext) SetPayload(payload JSONObject) {
 }
 func (s *scopedExecutionContext) Logger() *logrus.Entry {
 	return s.logger
+}
+func (s *scopedExecutionContext) TaskRunner() *TaskRunner {
+	return s.taskRunner
 }

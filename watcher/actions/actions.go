@@ -6,7 +6,6 @@ import (
 
 	"time"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"github.com/uphy/elastic-watcher/watcher/condition"
 	"github.com/uphy/elastic-watcher/watcher/context"
@@ -64,17 +63,11 @@ func (a *actionContainer) run(ctx context.ExecutionContext) error {
 }
 
 func (a Actions) Run(ctx context.ExecutionContext) error {
-	var errs error
-	for name, action := range a {
-		wrappedCtx, err := context.Wrap(ctx)
-		if err != nil {
-			return err
-		}
-		if err := action.run(wrappedCtx); err != nil {
-			errs = multierror.Append(errs, errors.Wrap(err, "failed to execute action: "+name))
-		}
+	tasks := []context.Task{}
+	for _, action := range a {
+		tasks = append(tasks, context.NewTask(action.run))
 	}
-	return errs
+	return ctx.TaskRunner().Run(context.NewParallelTask(tasks))
 }
 
 func (a *Actions) UnmarshalJSON(data []byte) (err error) {

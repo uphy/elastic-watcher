@@ -28,7 +28,31 @@ func (s *Script) Value(ctx ExecutionContext) (interface{}, error) {
 	if err != nil {
 		return false, err
 	}
-	return v.Export()
+	return s.export(v)
+}
+
+func (s *Script) export(v *otto.Value) (interface{}, error) {
+	exported, err := v.Export()
+	if err != nil {
+		return nil, err
+	}
+	switch e := exported.(type) {
+	case map[string]interface{}:
+		m := map[string]interface{}{}
+		for k, v := range e {
+			if o, ok := v.(otto.Value); ok {
+				v2, err := s.export(&o)
+				if err != nil {
+					return nil, err
+				}
+				m[k] = v2
+			} else {
+				m[k] = v
+			}
+		}
+		exported = m
+	}
+	return exported, nil
 }
 
 func (s *Script) value(ctx ExecutionContext) (*otto.Value, error) {

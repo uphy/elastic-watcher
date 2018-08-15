@@ -44,10 +44,7 @@ func TestHTTPRun(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	vv, ok := ctx.Payload().(map[string]interface{})
-	if !ok {
-		t.Error("unexpected response type")
-	}
+	vv := ctx.Payload()
 	if vv["_status_code"] != 200 {
 		t.Errorf("want 200 but %v", vv["_status_code"])
 	}

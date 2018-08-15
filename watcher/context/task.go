@@ -1,6 +1,7 @@
 package context
 
 import (
+	"errors"
 	"reflect"
 	"sync"
 
@@ -10,13 +11,12 @@ import (
 
 type (
 	TaskRunner struct {
-		workers []*worker
-		logger  *logrus.Entry
-		baseCtx ExecutionContext
-	}
-	worker struct {
-		id  string
-		ctx ExecutionContext
+		id       string
+		logger   *logrus.Entry
+		parent   *TaskRunner
+		children []*TaskRunner
+		ctx      ExecutionContext
+		stopped  bool
 	}
 	TaskFunc func(ctx ExecutionContext) error
 	Task     interface {
@@ -38,27 +38,23 @@ func (s *stop) Error() string {
 
 var ErrStop = &stop{}
 
-func NewTaskRunner(ctx ExecutionContext) *TaskRunner {
-	r := &TaskRunner{
-		logger:  ctx.Logger(),
-		baseCtx: ctx,
+func newTaskRunner(ctx ExecutionContext) *TaskRunner {
+	return &TaskRunner{
+		id:       generateID(),
+		logger:   ctx.Logger(),
+		parent:   nil,
+		children: nil,
+		ctx:      ctx,
+		stopped:  false,
 	}
-	r.addWorker(ctx)
-	return r
 }
 
 func (t *TaskRunner) Init() {
-	t.workers = nil
-	t.addWorker(t.baseCtx)
+	t.children = nil
 }
 
-func (t *TaskRunner) addWorker(ctx ExecutionContext) *worker {
-	w := &worker{
-		id:  generateID(),
-		ctx: ctx,
-	}
-	t.workers = append(t.workers, w)
-	return w
+func NewTask(f TaskFunc) Task {
+	return &task{f}
 }
 
 func (t *task) Run(ctx ExecutionContext) error {
@@ -66,56 +62,70 @@ func (t *task) Run(ctx ExecutionContext) error {
 }
 
 func (t *TaskRunner) RunFunc(f TaskFunc) error {
-	return t.Run(&task{f})
+	return t.Run(NewTask(f))
 }
 
 func (t *TaskRunner) Run(task Task) error {
-	workers := t.workers
+	workers := t.children
+	if len(workers) == 0 {
+		workers = append(workers, t)
+	}
 	t.logger.WithFields(logrus.Fields{
 		"type":    reflect.TypeOf(task),
 		"workers": len(workers),
 	}).Debug("Running task...")
-	for i, w := range workers {
-		if err := w.run(task); err != nil {
+	for _, worker := range workers {
+		if err := worker.run(task); err != nil {
 			if err == ErrStop {
-				t.stopWorker(i)
 				continue
 			}
 			return err
 		}
-		splitted := consumeSplittedPayload(w.ctx)
-		if len(splitted) > 1 {
-			t.logger.WithFields(logrus.Fields{
-				"current": len(t.workers),
-				"new":     len(t.workers) + len(splitted) - 1,
-			}).Debug("Splitting workers...")
-			t.stopWorker(i)
-			if err := t.forkWorker(w, splitted); err != nil {
-				return err
-			}
-		}
 	}
 	return nil
 }
 
-func (t *TaskRunner) stopWorker(i int) {
-	t.workers = append(t.workers[:i], t.workers[i+1:]...)
+func (t *TaskRunner) stop() {
+	t.stopped = true
 }
 
-func (t *TaskRunner) forkWorker(w *worker, splittedPayload []JSONObject) error {
+func (t *TaskRunner) run(task Task) error {
+	if t.stopped {
+		return errors.New("runner stopped")
+	}
+	if err := task.Run(t.ctx); err != nil {
+		if err == ErrStop {
+			t.stop()
+			return err
+		}
+		return err
+	}
+	splitted := consumeSplittedPayload(t.ctx)
+	if splitted != nil {
+		t.logger.WithFields(logrus.Fields{
+			"current": len(t.children),
+			"new":     len(t.children) + len(splitted) - 1,
+		}).Debug("Splitting workers...")
+		return t.forkWorker(splitted)
+	}
+	return nil
+}
+
+func (t *TaskRunner) forkWorker(splittedPayload []JSONObject) error {
 	for _, p := range splittedPayload {
-		c, err := Wrap(w.ctx)
+		c, err := wrapContext(t.ctx, false)
 		if err != nil {
 			return err
 		}
 		c.SetPayload(p)
-		t.addWorker(c)
 	}
 	return nil
 }
 
-func (w *worker) run(task Task) error {
-	return task.Run(w.ctx)
+func (t *TaskRunner) addWorker(ctx ExecutionContext) *TaskRunner {
+	child := newTaskRunner(ctx)
+	t.children = append(t.children, child)
+	return child
 }
 
 func NewParallelTask(tasks []Task) Task {
@@ -129,7 +139,7 @@ func (p *parallelTask) Run(ctx ExecutionContext) error {
 	for _, task := range p.tasks {
 		wg.Add(1)
 		go func(task Task, ctx ExecutionContext) {
-			wrappedCtx, err := Wrap(ctx)
+			wrappedCtx, err := wrapContext(ctx, true)
 			if err != nil {
 				errs = multierror.Append(errs, err)
 				return
@@ -145,32 +155,3 @@ func (p *parallelTask) Run(ctx ExecutionContext) error {
 	wg.Wait()
 	return errs
 }
-
-/*
-func (t *TaskRunner) RunParallelFunc(f ...TaskFunc) error {
-	tasks := []Task{}
-	for _, ff := range f {
-		tasks = append(tasks, &task{ff})
-	}
-	return t.RunParallel(tasks...)
-}
-
-func (t *TaskRunner) RunParallel(tasks ...Task) error {
-	var err error
-	errmutex := new(sync.Mutex)
-	wg := new(sync.WaitGroup)
-	for _, task := range tasks {
-		wg.Add(1)
-		go func(task Task) {
-			if e := task.Run(Wrap(ctx)); err != nil {
-				errmutex.Lock()
-				defer errmutex.Unlock()
-				err = multierror.Append(err, e)
-			}
-			wg.Done()
-		}(ctx)
-	}
-	wg.Wait()
-	return err
-}
-*/

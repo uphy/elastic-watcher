@@ -4,7 +4,7 @@ import "fmt"
 
 func ExampleTaskSimple() {
 	ctx := TODO()
-	runner := NewTaskRunner(ctx)
+	runner := ctx.TaskRunner()
 	runner.RunFunc(func(ctx ExecutionContext) error {
 		fmt.Println("task1")
 		return nil
@@ -20,15 +20,22 @@ func ExampleTaskSimple() {
 
 func ExampleTaskSplit() {
 	ctx := TODO()
-	runner := NewTaskRunner(ctx)
+	runner := ctx.TaskRunner()
 	runner.RunFunc(func(ctx ExecutionContext) error {
 		fmt.Println("task1")
-		ctx.SetPayload([]interface{}{1, 2})
+		setSplittedPayload(ctx, []JSONObject{
+			{
+				"a": 1,
+			},
+			{
+				"a": 2,
+			},
+		})
 		return nil
 	})
 	runner.RunFunc(func(ctx ExecutionContext) error {
 		p := ctx.Payload()
-		fmt.Printf("task2-%v\n", p)
+		fmt.Printf("task2-%v\n", p["a"])
 		return nil
 	})
 	// Output:
@@ -39,30 +46,34 @@ func ExampleTaskSplit() {
 
 func ExampleTaskStop() {
 	ctx := TODO()
-	runner := NewTaskRunner(ctx)
+	runner := ctx.TaskRunner()
 	runner.RunFunc(func(ctx ExecutionContext) error {
 		fmt.Println("task1")
-		ctx.SetPayload([]interface{}{1, 2})
+		setSplittedPayload(ctx, []JSONObject{
+			{
+				"a": 1,
+			},
+			{
+				"a": 2,
+			},
+		})
 		return nil
 	})
 	runner.RunFunc(func(ctx ExecutionContext) error {
 		p := ctx.Payload()
-		fmt.Printf("task2-%v\n", p)
-		if n, ok := p.(int); ok {
-			if n == 2 {
-				return ErrStop
-			}
+		if fmt.Sprint(p["a"]) == "2" {
+			return ErrStop
 		}
+		fmt.Printf("task2-%v\n", p["a"])
 		return nil
 	})
 	runner.RunFunc(func(ctx ExecutionContext) error {
 		p := ctx.Payload()
-		fmt.Printf("task3-%v\n", p)
+		fmt.Printf("task3-%v\n", p["a"])
 		return nil
 	})
 	// Output:
 	// task1
 	// task2-1
-	// task2-2
 	// task3-1
 }

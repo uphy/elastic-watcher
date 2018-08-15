@@ -47,15 +47,15 @@ input:
               - cpu:
                   value: 0.20559346271705822
                 doc_count: 979
-                key: host1
+                key: host1-prod
               - cpu:
                   value: 0.90591940501949321
                 doc_count: 979
-                key: host2
+                key: host2-dev
               - cpu:
                   value: 0.95010493919505892
                 doc_count: 979
-                key: host3
+                key: host3-prod
               doc_count_error_upper_bound: 0
               sum_other_doc_count: 0
           hits:
@@ -75,6 +75,17 @@ input:
                 host: b.key
               }
             }));
+transform:
+  script: |
+    String.prototype.endsWith = function(suffix){
+      return this.indexOf(suffix, this.length - suffix.length) !== -1;
+    }
+    var email = ["dev@example.com"]
+    if (ctx.payload.host.endsWith("-prod")) {
+      email.push("prod@example.com");
+    }
+    ctx.payload.email = email;
+    ctx.payload
 
 actions:
   log:
