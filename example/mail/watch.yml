@@ -1,0 +1,13 @@
+actions:
+  email:
+    send_email:
+      email:
+        from: Me <me@example.com>
+        to:
+        - "to1@example.com"
+        - "to2@example.com"
+        cc:
+        - "cc1@example.com"
+        - "cc2@example.com"
+        subject: "alert!!!"
+        body: "something happened."

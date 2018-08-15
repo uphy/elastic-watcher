@@ -101,3 +101,14 @@ actions:
         CPU: {{ ctx.payload.cpu }}
         Detail: {{#toJson}}ctx.payload{{/toJson}}
         ---
+  email:
+    send_email:
+      dryrun: true
+      email:
+        account: test
+        from: "me@example.com"
+        to:
+        - "to1@example.com"
+        - "to2@example.com"
+        subject: "alert!!!"
+        body: "something happened."

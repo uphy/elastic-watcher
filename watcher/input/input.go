@@ -29,6 +29,9 @@ func (i *Input) Run(ctx context.ExecutionContext) error {
 			return nil
 		}
 	}
+	if i.reader == nil {
+		return nil
+	}
 	return i.reader.Run(ctx)
 }
 

@@ -2,7 +2,9 @@ package actions
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"strings"
 
 	"net/mail"
 	"net/smtp"
@@ -12,7 +14,8 @@ import (
 
 type (
 	SendEmailAction struct {
-		Email *Email `json:"email"`
+		Email  *Email `json:"email"`
+		DryRun bool   `json:"dryrun"`
 	}
 
 	Email struct {
@@ -24,12 +27,14 @@ type (
 		Body    context.TemplateValue `json:"body"`
 	}
 
-	Address   context.TemplateValue
+	Address struct {
+		context.TemplateValue
+	}
 	Addresses []Address
 )
 
 func (a Address) parse(ctx context.ExecutionContext) (*mail.Address, error) {
-	rendered, err := context.TemplateValue(a).String(ctx)
+	rendered, err := a.TemplateValue.String(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -60,6 +65,9 @@ func joinMailAddress(a []mail.Address) string {
 }
 
 func (l *SendEmailAction) Run(ctx context.ExecutionContext) error {
+	if ctx.GlobalConfig().Email == nil {
+		return errors.New("no email config")
+	}
 	account := ctx.GlobalConfig().Email.GetAccount(l.Email.Account)
 	if account == nil {
 		accountName := l.Email.Account
@@ -90,11 +98,18 @@ func (l *SendEmailAction) Run(ctx context.ExecutionContext) error {
 		return fmt.Errorf("failed to render `body`: %v", err)
 	}
 
-	msg := "From:" + from.String() + "\r\n" +
-		"To:" + joinMailAddress(to) + "\r\n" +
-		"Cc:" + joinMailAddress(cc) + "\r\n" +
-		"Subject:" + subject + "\r\n" +
-		"\r\n" + body
+	msg := new(bytes.Buffer)
+	msg.WriteString("From: " + from.String())
+	msg.WriteString("\r\n")
+	msg.WriteString("To: " + joinMailAddress(to))
+	msg.WriteString("\r\n")
+	if len(cc) > 0 {
+		msg.WriteString("Cc: " + joinMailAddress(cc))
+		msg.WriteString("\r\n")
+	}
+	msg.WriteString("Subject: " + subject)
+	msg.WriteString("\r\n\r\n")
+	msg.WriteString(body)
 
 	recipients := []string{}
 	for _, a := range to {
@@ -107,5 +122,17 @@ func (l *SendEmailAction) Run(ctx context.ExecutionContext) error {
 	if account.SMTP.Auth {
 		auth = smtp.PlainAuth("", *account.SMTP.User, *account.SMTP.Password, account.SMTP.Host)
 	}
-	return smtp.SendMail(fmt.Sprintf("%s:%d", account.SMTP.Host, account.SMTP.Port), auth, from.Address, recipients, []byte(msg))
+	addr := fmt.Sprintf("%s:%d", account.SMTP.Host, account.SMTP.Port)
+	if l.DryRun {
+		logger := ctx.Logger()
+		logger.Infof("addr: %s", addr)
+		logger.Infof("auth: %v", auth)
+		logger.Infof("from: %v", from.Address)
+		logger.Infof("to: %v", recipients)
+		for _, s := range strings.Split(msg.String(), "\r\n") {
+			logger.Info(s)
+		}
+		return nil
+	}
+	return smtp.SendMail(addr, auth, from.Address, recipients, msg.Bytes())
 }
