@@ -2,6 +2,7 @@ package actions
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"time"
 
@@ -23,7 +24,7 @@ type (
 		condition      *condition.Conditions
 		transform      *transform.Transform
 		throttlePeriod *Duration
-		// lastAlert is a map from context id to last action time
+		// lastAlert maps _key parameter of payload to last action time
 		lastAlert map[string]time.Time
 	}
 
@@ -31,8 +32,10 @@ type (
 )
 
 func (a *actionContainer) run(ctx context.ExecutionContext) error {
+	keyObj := ctx.Payload()["_key"]
+	key := fmt.Sprint(keyObj)
 	if a.throttlePeriod != nil {
-		if lastAlert, ok := a.lastAlert[ctx.ID()]; ok {
+		if lastAlert, ok := a.lastAlert[key]; ok {
 			if time.Now().Before(lastAlert.Add(a.throttlePeriod.Duration)) {
 				return nil
 			}
@@ -56,7 +59,7 @@ func (a *actionContainer) run(ctx context.ExecutionContext) error {
 	if err := a.action.Run(ctx); err != nil {
 		return err
 	}
-	a.lastAlert[ctx.ID()] = time.Now()
+	a.lastAlert[key] = time.Now()
 	return nil
 }
 

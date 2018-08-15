@@ -10,15 +10,17 @@ import (
 type Watch struct {
 	c            *WatchConfig
 	globalConfig *config.Config
+	ctx          context.ExecutionContext
 }
 
 func NewWatch(globalConfig *config.Config, c *WatchConfig) *Watch {
-	return &Watch{c, globalConfig}
+	return &Watch{c, globalConfig, context.New(globalConfig, c.Metadata)}
 }
 
 func (w *Watch) Run() error {
-	// clear state
-	ctx := context.New(w.globalConfig, w.c.Metadata)
+	ctx := w.ctx
+	context.Init(ctx)
+
 	runner := ctx.TaskRunner()
 
 	// input

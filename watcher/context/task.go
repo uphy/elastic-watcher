@@ -47,6 +47,11 @@ func NewTaskRunner(ctx ExecutionContext) *TaskRunner {
 	return r
 }
 
+func (t *TaskRunner) Init() {
+	t.workers = nil
+	t.addWorker(t.baseCtx)
+}
+
 func (t *TaskRunner) addWorker(ctx ExecutionContext) *worker {
 	w := &worker{
 		id:  generateID(),

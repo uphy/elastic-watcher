@@ -1,11 +1,13 @@
 trigger:
   schedule:
-    interval: 10m
+    interval: 10s
 
 input:
   chain:
     inputs:
     - searchevents:
+        condition:
+          never:
         search:
           request:
             indices:
@@ -18,7 +20,7 @@ input:
                   filter:
                   - range:
                       "@timestamp":
-                        gte: "now-3h"
+                        gte: "now-1h"
                   - match:
                       "metricset.module": system
                   - match:
@@ -32,35 +34,59 @@ input:
                     cpu:
                       avg:
                         field: system.cpu.total.pct
+    - searchevents:
+        simple:
+          _shards:
+            failed: 0
+            skipped: 0
+            successful: 10
+            total: 10
+          aggregations:
+            group_by_host:
+              buckets:
+              - cpu:
+                  value: 0.20559346271705822
+                doc_count: 979
+                key: host1
+              - cpu:
+                  value: 0.90591940501949321
+                doc_count: 979
+                key: host2
+              - cpu:
+                  value: 0.95010493919505892
+                doc_count: 979
+                key: host3
+              doc_count_error_upper_bound: 0
+              sum_other_doc_count: 0
+          hits:
+            hits: []
+            max_score: 0
+            total: 979
+          timed_out: false
+          took: 14
+          
     - splitevents:
         transform:
           script: |
-            var buckets = ctx.payload.searchevents.aggregations.group_by_host.buckets;
-            var splitted = buckets.map(function(b) {
+            split(ctx.payload.searchevents.aggregations.group_by_host.buckets.map(function(b) {
               return {
+                _key: b.key,
                 cpu: b.cpu.value,
                 host: b.key
               }
-            });
-            splitted.push({
-              cpu: 0.9,
-              host: "myhost"
-            })
-            split(splitted);
-            ctx.payload
+            }));
 
 actions:
   log:
-    throttle_period: 10m
+    throttle_period: 1m
     condition: 
       compare:
         ctx.payload.cpu:
-          gt: 0.001
+          gt: 0.9
     logging:
       text: |
-        hogehogehoge
-        ---
+        High CPU Usage
         Host: {{ ctx.payload.host }}
         CPU: {{ ctx.payload.cpu }}
+        Detail: {{#toJson}}ctx.payload{{/toJson}}
         ---
-        {{#toJson}}ctx.payload{{/toJson}}

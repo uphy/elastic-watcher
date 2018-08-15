@@ -6,3 +6,5 @@ The watch config file format based on [Elastic X-Pack watcher feature](https://w
 ## Defferences
 
 - The default script language is not `painless` but `javascript`.
+- Payload split
+- Input condition

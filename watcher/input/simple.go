@@ -1,12 +1,12 @@
 package input
 
-import "github.com/uphy/elastic-watcher/watcher/context"
+import (
+	"github.com/uphy/elastic-watcher/watcher/context"
+)
 
-type SimpleInput struct {
-	context.JSONObject
-}
+type SimpleInput context.JSONObject
 
 func (s SimpleInput) Run(ctx context.ExecutionContext) error {
-	ctx.SetPayload(s.JSONObject)
+	ctx.SetPayload(context.JSONObject(s))
 	return nil
 }

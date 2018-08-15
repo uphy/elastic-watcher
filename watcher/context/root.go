@@ -70,6 +70,12 @@ func New(globalConfig *config.Config, metadata JSONObject) ExecutionContext {
 	return ctx
 }
 
+func Init(ctx ExecutionContext) {
+	ctx.SetPayload(JSONObject{})
+	ctx.SetVars(JSONObject{})
+	ctx.TaskRunner().Init()
+}
+
 func (e *rootExecutionContext) ID() string {
 	return e.id
 }

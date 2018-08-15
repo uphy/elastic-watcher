@@ -11,7 +11,7 @@ type ChainInput struct {
 type NamedInput map[string]Input
 
 func (i *ChainInput) Run(ctx context.ExecutionContext) error {
-	p := map[string]interface{}{}
+	p := context.JSONObject{}
 	ctx.SetPayload(p)
 	for _, input := range i.Inputs {
 		for name, t := range input {

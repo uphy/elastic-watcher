@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/uphy/elastic-watcher/watcher/condition"
 	"github.com/uphy/elastic-watcher/watcher/context"
 )
 
 type Input struct {
-	typ    string
-	reader Reader
+	typ       string
+	reader    Reader
+	condition condition.Condition
 }
 
 type Reader interface {
@@ -17,6 +19,16 @@ type Reader interface {
 }
 
 func (i *Input) Run(ctx context.ExecutionContext) error {
+	if i.condition != nil {
+		matched, err := i.condition.Match(ctx)
+		if err != nil {
+			return err
+		}
+		if !matched {
+			ctx.Logger().Debug("Input has been skipped because condition is not matched.")
+			return nil
+		}
+	}
 	return i.reader.Run(ctx)
 }
 
@@ -42,12 +54,11 @@ func (i *Input) UnmarshalJSON(data []byte) error {
 
 	if len(v) == 0 {
 		return errors.New("empty input")
-	} else if len(v) > 1 {
-		return errors.New("multiple input not supported")
 	}
 
 	for name, r := range v {
 		var reader Reader
+		var cond condition.Condition
 		switch name {
 		case "search":
 			reader = &SearchInput{}
@@ -59,6 +70,8 @@ func (i *Input) UnmarshalJSON(data []byte) error {
 			reader = &HTTPInput{}
 		case "chain":
 			reader = &ChainInput{}
+		case "condition":
+			cond = &condition.Conditions{}
 		default:
 			return errors.New("unsupported input: " + name)
 		}
@@ -67,11 +80,22 @@ func (i *Input) UnmarshalJSON(data []byte) error {
 		if err != nil {
 			return err
 		}
-		if err := json.Unmarshal(j, reader); err != nil {
-			return err
+
+		if reader != nil {
+			if err := json.Unmarshal(j, reader); err != nil {
+				return err
+			}
+			i.typ = name
+			if i.reader != nil {
+				return errors.New("multiple input not supported")
+			}
+			i.reader = reader
+		} else if cond != nil {
+			if err := json.Unmarshal(j, cond); err != nil {
+				return err
+			}
+			i.condition = cond
 		}
-		i.typ = name
-		i.reader = reader
 	}
 	return nil
 }
