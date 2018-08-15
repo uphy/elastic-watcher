@@ -21,7 +21,7 @@ type (
 		Payload() JSONObject
 		SetPayload(payload JSONObject)
 		GlobalConfig() *config.Config
-		Logger() *logrus.Logger
+		Logger() *logrus.Entry
 		TaskRunner() *TaskRunner
 	}
 	JSONObject map[string]interface{}

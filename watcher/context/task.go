@@ -4,17 +4,19 @@ import (
 	"reflect"
 	"sync"
 
+	"github.com/Sirupsen/logrus"
 	multierror "github.com/hashicorp/go-multierror"
 )
 
 type (
 	TaskRunner struct {
 		workers []*worker
+		logger  *logrus.Entry
+		baseCtx ExecutionContext
 	}
 	worker struct {
-		id  int
+		id  string
 		ctx ExecutionContext
-		m   *sync.Mutex
 	}
 	TaskFunc func(ctx ExecutionContext) error
 	Task     interface {
@@ -37,20 +39,18 @@ func (s *stop) Error() string {
 var ErrStop = &stop{}
 
 func NewTaskRunner(ctx ExecutionContext) *TaskRunner {
-	r := &TaskRunner{}
+	r := &TaskRunner{
+		logger:  ctx.Logger(),
+		baseCtx: ctx,
+	}
 	r.addWorker(ctx)
 	return r
 }
 
-var workerID = 0
-
 func (t *TaskRunner) addWorker(ctx ExecutionContext) *worker {
-	id := workerID
-	workerID++
 	w := &worker{
-		id:  id,
+		id:  generateID(),
 		ctx: ctx,
-		m:   new(sync.Mutex),
 	}
 	t.workers = append(t.workers, w)
 	return w
@@ -66,8 +66,11 @@ func (t *TaskRunner) RunFunc(f TaskFunc) error {
 
 func (t *TaskRunner) Run(task Task) error {
 	workers := t.workers
+	t.logger.WithFields(logrus.Fields{
+		"type":    reflect.TypeOf(task),
+		"workers": len(workers),
+	}).Debug("Running task...")
 	for i, w := range workers {
-		w.ctx.Logger().Infof("running task: %v", reflect.TypeOf(task))
 		if err := w.run(task); err != nil {
 			if err == ErrStop {
 				t.stopWorker(i)
@@ -77,7 +80,10 @@ func (t *TaskRunner) Run(task Task) error {
 		}
 		splitted := consumeSplittedPayload(w.ctx)
 		if len(splitted) > 1 {
-			w.ctx.Logger().Info("forking")
+			t.logger.WithFields(logrus.Fields{
+				"current": len(t.workers),
+				"new":     len(t.workers) + len(splitted) - 1,
+			}).Debug("Splitting workers...")
 			t.stopWorker(i)
 			if err := t.forkWorker(w, splitted); err != nil {
 				return err
@@ -104,8 +110,6 @@ func (t *TaskRunner) forkWorker(w *worker, splittedPayload []JSONObject) error {
 }
 
 func (w *worker) run(task Task) error {
-	//w.m.Lock()
-	//defer w.m.Unlock()
 	return task.Run(w.ctx)
 }
 

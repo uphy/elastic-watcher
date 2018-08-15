@@ -17,7 +17,7 @@ type (
 		payload       JSONObject
 		vars          JSONObject
 		globalConfig  *config.Config
-		logger        *logrus.Logger
+		logger        *logrus.Entry
 		taskRunner    *TaskRunner
 	}
 )
@@ -27,9 +27,29 @@ func TODO() ExecutionContext {
 }
 
 func New(globalConfig *config.Config, metadata map[string]interface{}) ExecutionContext {
+	id := generateID()
+	watchID := generateID()
 	t := time.Now()
+
+	// logger
 	logger := logrus.New()
-	logger.SetLevel(logrus.DebugLevel)
+	logger.Formatter = &logrus.TextFormatter{
+		FullTimestamp: true,
+	}
+	if globalConfig.Debug {
+		logger.SetLevel(logrus.DebugLevel)
+	} else {
+		logger.SetLevel(logrus.InfoLevel)
+	}
+	// logger entry
+	entry := logrus.NewEntry(logger)
+	if globalConfig.Debug {
+		entry = entry.WithFields(logrus.Fields{
+			"watchID": watchID,
+			"id":      id,
+		})
+	}
+
 	ctx := &rootExecutionContext{
 		id:            generateID(),
 		watchID:       generateID(),
@@ -40,10 +60,11 @@ func New(globalConfig *config.Config, metadata map[string]interface{}) Execution
 		},
 		metadata:     metadata,
 		globalConfig: globalConfig,
-		logger:       logger,
 		payload:      JSONObject{},
 		vars:         JSONObject{},
+		logger:       entry,
 	}
+
 	runner := NewTaskRunner(ctx)
 	ctx.taskRunner = runner
 	return ctx
@@ -88,7 +109,7 @@ func (e *rootExecutionContext) GlobalConfig() *config.Config {
 	return e.globalConfig
 }
 
-func (r *rootExecutionContext) Logger() *logrus.Logger {
+func (r *rootExecutionContext) Logger() *logrus.Entry {
 	return r.logger
 }
 

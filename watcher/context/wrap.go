@@ -1,23 +1,39 @@
 package context
 
+import (
+	"github.com/Sirupsen/logrus"
+)
+
 type scopedExecutionContext struct {
 	ExecutionContext
 	id      string
+	logger  *logrus.Entry
 	payload JSONObject
 	vars    JSONObject
 }
 
 func newScopedContext(ctx ExecutionContext) (ExecutionContext, error) {
+	id := generateID()
 	payload, err := ctx.Payload().Clone()
 	if err != nil {
 		return nil, err
 	}
 	vars, err := ctx.Vars().Clone()
+	if err != nil {
+		return nil, err
+	}
+
+	entry := ctx.Logger()
+	if ctx.GlobalConfig().Debug {
+		// overwrite id
+		entry = entry.WithField("id", id)
+	}
 	return &scopedExecutionContext{
 		ExecutionContext: ctx,
-		id:               generateID(),
+		id:               id,
 		payload:          payload,
 		vars:             vars,
+		logger:           entry,
 	}, nil
 }
 func (s *scopedExecutionContext) ID() string {
@@ -34,4 +50,7 @@ func (s *scopedExecutionContext) Payload() JSONObject {
 }
 func (s *scopedExecutionContext) SetPayload(payload JSONObject) {
 	s.payload = payload
+}
+func (s *scopedExecutionContext) Logger() *logrus.Entry {
+	return s.logger
 }
