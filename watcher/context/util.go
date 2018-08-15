@@ -14,8 +14,8 @@ import (
 	"github.com/rs/xid"
 )
 
-func data(ctx ExecutionContext) (map[string]interface{}, error) {
-	v := map[string]interface{}{}
+func data(ctx ExecutionContext) (JSONObject, error) {
+	v := JSONObject{}
 	v["watch_id"] = ctx.WatchID()
 	v["execution_time"] = ctx.ExecutionTime()
 	v["trigger"] = map[string]interface{}{
@@ -33,7 +33,7 @@ func renderTemplate(ctx ExecutionContext, template string, params map[string]int
 	if err != nil {
 		return "", err
 	}
-	p := map[string]interface{}{}
+	p := JSONObject{}
 	p["ctx"] = data
 	if params != nil {
 		for k, v := range params {

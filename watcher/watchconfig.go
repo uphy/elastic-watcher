@@ -8,6 +8,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/uphy/elastic-watcher/watcher/actions"
 	"github.com/uphy/elastic-watcher/watcher/condition"
+	"github.com/uphy/elastic-watcher/watcher/context"
 	"github.com/uphy/elastic-watcher/watcher/input"
 	"github.com/uphy/elastic-watcher/watcher/transform"
 	"github.com/uphy/elastic-watcher/watcher/trigger"
@@ -15,12 +16,12 @@ import (
 
 type (
 	WatchConfig struct {
-		Metadata  map[string]interface{} `json:"metadata"`
-		Trigger   trigger.Trigger        `json:"trigger"`
-		Input     input.Input            `json:"input"`
-		Condition condition.Conditions   `json:"condition"`
-		Transform *transform.Transform   `json:"transform"`
-		Actions   actions.Actions        `json:"actions"`
+		Metadata  context.JSONObject   `json:"metadata"`
+		Trigger   trigger.Trigger      `json:"trigger"`
+		Input     input.Input          `json:"input"`
+		Condition condition.Conditions `json:"condition"`
+		Transform *transform.Transform `json:"transform"`
+		Actions   actions.Actions      `json:"actions"`
 	}
 )
 

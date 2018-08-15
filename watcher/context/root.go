@@ -13,7 +13,7 @@ type (
 		watchID       string
 		executionTime time.Time
 		trigger       Trigger
-		metadata      map[string]interface{}
+		metadata      JSONObject
 		payload       JSONObject
 		vars          JSONObject
 		globalConfig  *config.Config
@@ -23,10 +23,10 @@ type (
 )
 
 func TODO() ExecutionContext {
-	return New(&config.Config{}, map[string]interface{}{})
+	return New(&config.Config{}, JSONObject{})
 }
 
-func New(globalConfig *config.Config, metadata map[string]interface{}) ExecutionContext {
+func New(globalConfig *config.Config, metadata JSONObject) ExecutionContext {
 	id := generateID()
 	watchID := generateID()
 	t := time.Now()
@@ -85,7 +85,7 @@ func (e *rootExecutionContext) Trigger() Trigger {
 	return e.trigger
 }
 
-func (e *rootExecutionContext) Metadata() interface{} {
+func (e *rootExecutionContext) Metadata() JSONObject {
 	return e.metadata
 }
 

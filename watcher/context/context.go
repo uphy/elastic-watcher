@@ -15,7 +15,7 @@ type (
 		WatchID() string
 		ExecutionTime() time.Time
 		Trigger() Trigger
-		Metadata() interface{}
+		Metadata() JSONObject
 		Vars() JSONObject
 		SetVars(vars JSONObject)
 		Payload() JSONObject
