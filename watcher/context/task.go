@@ -1,7 +1,10 @@
 package context
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
+	"io"
 	"reflect"
 	"sync"
 
@@ -40,7 +43,7 @@ var ErrStop = &stop{}
 
 func newTaskRunner(ctx ExecutionContext) *TaskRunner {
 	return &TaskRunner{
-		id:       generateID(),
+		id:       ctx.ID(),
 		logger:   ctx.Logger(),
 		parent:   nil,
 		children: nil,
@@ -66,14 +69,19 @@ func (t *TaskRunner) RunFunc(f TaskFunc) error {
 }
 
 func (t *TaskRunner) Run(task Task) error {
-	workers := t.children
-	if len(workers) == 0 {
+	workers := []*TaskRunner{}
+	if len(t.children) == 0 {
 		workers = append(workers, t)
+	} else {
+		for _, w := range t.children {
+			workers = append(workers, w)
+		}
 	}
 	t.logger.WithFields(logrus.Fields{
 		"type":    reflect.TypeOf(task),
 		"workers": len(workers),
 	}).Debug("Running task...")
+	t.logWorkers()
 	for _, worker := range workers {
 		if err := worker.run(task); err != nil {
 			if err == ErrStop {
@@ -85,8 +93,21 @@ func (t *TaskRunner) Run(task Task) error {
 	return nil
 }
 
+func (t *TaskRunner) remove(child *TaskRunner) error {
+	for i, c := range t.children {
+		if c.id == child.id {
+			t.children = append(t.children[:i], t.children[i+1:]...)
+			return nil
+		}
+	}
+	return errors.New("no such child")
+}
+
 func (t *TaskRunner) stop() {
 	t.stopped = true
+	if t.parent != nil {
+		t.parent.remove(t)
+	}
 }
 
 func (t *TaskRunner) run(task Task) error {
@@ -96,6 +117,10 @@ func (t *TaskRunner) run(task Task) error {
 	if err := task.Run(t.ctx); err != nil {
 		if err == ErrStop {
 			t.stop()
+			t.logger.WithFields(logrus.Fields{
+				"type":   reflect.TypeOf(task),
+				"worker": t.id,
+			}).Debug("worker stopped")
 			return err
 		}
 		return err
@@ -106,7 +131,10 @@ func (t *TaskRunner) run(task Task) error {
 			"current": len(t.children),
 			"new":     len(t.children) + len(splitted) - 1,
 		}).Debug("Splitting workers...")
-		return t.forkWorker(splitted)
+		if err := t.forkWorker(splitted); err != nil {
+			return err
+		}
+		t.logWorkers()
 	}
 	return nil
 }
@@ -125,7 +153,35 @@ func (t *TaskRunner) forkWorker(splittedPayload []JSONObject) error {
 func (t *TaskRunner) addWorker(ctx ExecutionContext) *TaskRunner {
 	child := newTaskRunner(ctx)
 	t.children = append(t.children, child)
+	child.parent = t
 	return child
+}
+
+func (t *TaskRunner) root() *TaskRunner {
+	if t.parent == nil {
+		return t
+	}
+	return t.parent.root()
+}
+
+func (t *TaskRunner) logWorkers() {
+	if t.ctx.GlobalConfig().Debug {
+		t.logger.Debugf("workers:\n%s", t.root().strace())
+	}
+}
+
+func (t *TaskRunner) strace() string {
+	buf := new(bytes.Buffer)
+	t.trace("", buf)
+	return buf.String()
+}
+func (t *TaskRunner) trace(indent string, w io.Writer) {
+	fmt.Fprintf(w, "%s%s: %v\n", indent, t.id, t.ctx.Payload())
+	if t.children != nil {
+		for _, c := range t.children {
+			c.trace(indent+"  ", w)
+		}
+	}
 }
 
 func NewParallelTask(tasks []Task) Task {
