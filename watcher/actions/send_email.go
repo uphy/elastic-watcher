@@ -14,8 +14,7 @@ import (
 
 type (
 	SendEmailAction struct {
-		Email  *Email `json:"email"`
-		DryRun bool   `json:"dryrun"`
+		Email *Email `json:"email"`
 	}
 
 	Email struct {
@@ -65,6 +64,12 @@ func joinMailAddress(a []mail.Address) string {
 }
 
 func (l *SendEmailAction) Run(ctx context.ExecutionContext) error {
+	return l.run(ctx, false)
+}
+func (l *SendEmailAction) DryRun(ctx context.ExecutionContext) error {
+	return l.run(ctx, true)
+}
+func (l *SendEmailAction) run(ctx context.ExecutionContext, dryRun bool) error {
 	if ctx.GlobalConfig().Email == nil {
 		return errors.New("no email config")
 	}
@@ -123,10 +128,10 @@ func (l *SendEmailAction) Run(ctx context.ExecutionContext) error {
 		auth = smtp.PlainAuth("", *account.SMTP.User, *account.SMTP.Password, account.SMTP.Host)
 	}
 	addr := fmt.Sprintf("%s:%d", account.SMTP.Host, account.SMTP.Port)
-	if l.DryRun {
+	if dryRun {
 		logger := ctx.Logger()
 		logger.Infof("addr: %s", addr)
-		logger.Infof("auth: %v", auth)
+		logger.Infof("auth: %#v", auth)
 		logger.Infof("from: %v", from.Address)
 		logger.Infof("to: %v", recipients)
 		for _, s := range strings.Split(msg.String(), "\r\n") {

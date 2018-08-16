@@ -10,6 +10,10 @@ type LoggingAction struct {
 	Text context.TemplateValue `json:"text"`
 }
 
+func (l *LoggingAction) DryRun(ctx context.ExecutionContext) error {
+	return l.Run(ctx)
+}
+
 func (l *LoggingAction) Run(ctx context.ExecutionContext) error {
 	s, err := l.Text.String(ctx)
 	if err != nil {

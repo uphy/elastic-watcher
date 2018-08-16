@@ -16,6 +16,9 @@ type (
 	Action interface {
 		context.Task
 	}
+	DryRunner interface {
+		DryRun(ctx context.ExecutionContext) error
+	}
 
 	actionContainer struct {
 		typ            string
@@ -23,6 +26,7 @@ type (
 		condition      *condition.Conditions
 		transform      *transform.Transform
 		throttlePeriod *Duration
+		dryRun         *bool
 		// lastAlert maps _key parameter of payload to last action time
 		lastAlert map[string]time.Time
 	}
@@ -55,8 +59,18 @@ func (a *actionContainer) run(ctx context.ExecutionContext) error {
 			return err
 		}
 	}
-	if err := a.action.Run(ctx); err != nil {
-		return err
+	if a.dryRun != nil && *a.dryRun {
+		if dryRunner, ok := a.action.(DryRunner); ok {
+			if err := dryRunner.DryRun(ctx); err != nil {
+				return err
+			}
+		} else {
+			ctx.Logger().Infof("%s skipped because it doesn't support dry-run.", a.typ)
+		}
+	} else {
+		if err := a.action.Run(ctx); err != nil {
+			return err
+		}
 	}
 	a.lastAlert[key] = time.Now()
 	return nil
@@ -105,6 +119,12 @@ func (a *Actions) UnmarshalJSON(data []byte) (err error) {
 					return err
 				}
 				a.transform = &t
+			case "dry_run":
+				var dryRun bool
+				if err := json.Unmarshal(b, &dryRun); err != nil {
+					return err
+				}
+				a.dryRun = &dryRun
 			default:
 				act := newAction(typ)
 				if act == nil {
@@ -159,6 +179,9 @@ func (a Actions) MarshalJSON() ([]byte, error) {
 			}
 			actionMap["transform"] = transformMap
 		}
+		if action.dryRun != nil {
+			actionMap["dry_run"] = *action.dryRun
+		}
 		m[name] = actionMap
 	}
 	return json.Marshal(m)
@@ -170,6 +193,8 @@ func newAction(typ string) Action {
 		return &LoggingAction{}
 	case "send_email":
 		return &SendEmailAction{}
+	case "webhook":
+		return &WebhookAction{}
 	default:
 		return nil
 	}
