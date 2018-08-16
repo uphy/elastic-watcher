@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
 
 	"github.com/frohmut/mustache"
@@ -76,6 +77,11 @@ func consumeSplittedPayload(ctx ExecutionContext) []JSONObject {
 }
 
 func RunScript(ctx ExecutionContext, script string, params map[string]interface{}) (otto.Value, error) {
+	if ctx.GlobalConfig().Debug {
+		ctx.Logger().Debug("Running script")
+		ctx.Logger().Debugf("Script:\n%s", script)
+		ctx.Logger().Debugf("Params:%s", params)
+	}
 	// initialize javascript engine
 	vm := otto.New()
 
@@ -87,20 +93,31 @@ func RunScript(ctx ExecutionContext, script string, params map[string]interface{
 	if err := vm.Set("ctx", ctxData); err != nil {
 		return otto.NullValue(), err
 	}
+	if err := vm.Set("log", func(call otto.FunctionCall) otto.Value {
+		ctx.Logger().Info(call.Argument(0))
+		return otto.UndefinedValue()
+	}); err != nil {
+		return otto.NullValue(), err
+	}
 	if err := vm.Set("split", func(call otto.FunctionCall) otto.Value {
 		if len(call.ArgumentList) != 1 {
 			panic(call.Otto.MakeRangeError("splitted payload is required."))
 		}
-		splitted := call.Argument(0)
-		s, _ := splitted.Export()
-		casted, ok := s.([]map[string]interface{})
-		if !ok {
-			panic(call.Otto.MakeTypeError("splitted payload must be an object array"))
-		}
+		input := call.Argument(0)
+		s, _ := input.Export()
 
+		items := reflect.ValueOf(s)
+		if items.Kind() != reflect.Slice {
+			panic(call.Otto.MakeTypeError(fmt.Sprintf("splitted payload must be an object array: %v", reflect.TypeOf(s))))
+		}
 		jsonObjects := []JSONObject{}
-		for _, elm := range casted {
-			jsonObjects = append(jsonObjects, JSONObject(elm))
+		for i := 0; i < items.Len(); i++ {
+			elm := items.Index(i).Interface()
+			casted, ok := elm.(map[string]interface{})
+			if !ok {
+				panic(call.Otto.MakeTypeError(fmt.Sprintf("element of splitted payload must be an object: %v", reflect.TypeOf(s))))
+			}
+			jsonObjects = append(jsonObjects, JSONObject(casted))
 		}
 		setSplittedPayload(ctx, jsonObjects)
 		return otto.UndefinedValue()
