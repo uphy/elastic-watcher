@@ -9,6 +9,8 @@ import (
 
 	"github.com/uphy/elastic-watcher/watcher"
 	"github.com/urfave/cli"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 func (c *CLI) run() cli.Command {
@@ -53,6 +55,7 @@ func (c *CLI) run() cli.Command {
 				watchConfigs = append(watchConfigs, watchConf)
 			}
 
+			var errs error
 			for _, conf := range watchConfigs {
 				if ctx.Bool("print-config") {
 					conf.Save(os.Stdout)
@@ -61,11 +64,12 @@ func (c *CLI) run() cli.Command {
 					watch := watcher.NewWatch(c.globalConfig, conf)
 					if err := watch.Run(); err != nil {
 						log.Printf("Failed to run watch: %v", err)
+						errs = multierror.Append(errs, err)
 					}
 				}
 			}
 			if ctx.Bool("now") {
-				return nil
+				return errs
 			}
 
 			wa := watcher.New(c.globalConfig)
