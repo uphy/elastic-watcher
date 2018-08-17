@@ -16,12 +16,12 @@ import (
 
 type (
 	WatchConfig struct {
-		Metadata  context.JSONObject   `json:"metadata"`
-		Trigger   trigger.Trigger      `json:"trigger"`
-		Input     input.Input          `json:"input"`
-		Condition condition.Conditions `json:"condition"`
-		Transform *transform.Transform `json:"transform"`
-		Actions   actions.Actions      `json:"actions"`
+		Metadata  context.JSONObject    `json:"metadata,omitempty"`
+		Trigger   *trigger.Trigger      `json:"trigger,omitempty"`
+		Input     *input.Inputs         `json:"input,omitempty"`
+		Condition *condition.Conditions `json:"condition,omitempty"`
+		Transform *transform.Transforms `json:"transform,omitempty"`
+		Actions   *actions.Actions      `json:"actions,omitempty"`
 	}
 )
 

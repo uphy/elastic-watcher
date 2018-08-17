@@ -13,7 +13,7 @@ func TestScriptTransformer(t *testing.T) {
 	ctx.payload.foo = ['a','b'];
 	ctx.payload
 	`
-	task := &ScriptTransformer{
+	task := &ScriptTransform{
 		context.Script{
 			Inline: &script,
 		},
@@ -22,5 +22,4 @@ func TestScriptTransformer(t *testing.T) {
 		t.Error(err)
 	}
 	fmt.Println(ctx.Payload())
-	t.Error("a")
 }

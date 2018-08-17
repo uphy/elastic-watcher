@@ -24,13 +24,17 @@ func (w *Watch) Run() error {
 	runner := ctx.TaskRunner()
 
 	// input
-	if err := runner.Run(&w.c.Input); err != nil {
-		return w.wrapError(ctx, "input", err)
+	if w.c.Input != nil {
+		if err := runner.Run(w.c.Input); err != nil {
+			return w.wrapError(ctx, "input", err)
+		}
 	}
 
 	// check condition
-	if err := runner.Run(condition.NewTask(w.c.Condition)); err != nil {
-		return w.wrapError(ctx, "condition", err)
+	if w.c.Condition != nil {
+		if err := runner.Run(condition.NewTask(w.c.Condition)); err != nil {
+			return w.wrapError(ctx, "condition", err)
+		}
 	}
 
 	// transform
@@ -41,7 +45,11 @@ func (w *Watch) Run() error {
 	}
 
 	// run actions
-	return w.wrapError(ctx, "action", runner.Run(w.c.Actions))
+	if w.c.Actions != nil {
+		return w.wrapError(ctx, "action", runner.Run(w.c.Actions))
+	}
+
+	return nil
 }
 
 func (w *Watch) wrapError(ctx context.ExecutionContext, phase string, err error) error {

@@ -3,7 +3,7 @@ package transform
 import "github.com/uphy/elastic-watcher/watcher/context"
 
 type (
-	SearchTransformer struct {
+	SearchTransform struct {
 		Request Request `json:"request"`
 	}
 
@@ -13,7 +13,7 @@ type (
 	}
 )
 
-func (s *SearchTransformer) Run(ctx context.ExecutionContext) error {
+func (s *SearchTransform) Run(ctx context.ExecutionContext) error {
 	v, err := context.Search(ctx, s.Request.Indices, s.Request.Body)
 	if err != nil {
 		return err

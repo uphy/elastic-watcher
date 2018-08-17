@@ -6,11 +6,11 @@ import (
 	"github.com/uphy/elastic-watcher/watcher/context"
 )
 
-type ScriptTransformer struct {
+type ScriptTransform struct {
 	context.Script
 }
 
-func (t *ScriptTransformer) Run(ctx context.ExecutionContext) error {
+func (t *ScriptTransform) Run(ctx context.ExecutionContext) error {
 	v, err := t.Script.Value(ctx)
 	if err != nil {
 		return err

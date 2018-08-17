@@ -1,7 +1,7 @@
 package condition
 
 import (
-	"encoding/json"
+	"reflect"
 
 	"github.com/pkg/errors"
 
@@ -12,13 +12,19 @@ type (
 	Condition interface {
 		Match(ctx context.ExecutionContext) (bool, error)
 	}
-	Conditions     map[string]Condition
+	Conditions struct {
+		Script     *ScriptCondition  `json:"script,omitempty"`
+		Compare    *CompareCondition `json:"compare,omitempty"`
+		Always     *AlwaysCondition  `json:"always,omitempty"`
+		Never      *NeverCondition   `json:"never,omitempty"`
+		conditions []Condition       `json:"-"`
+	}
 	ConditionsTask struct {
-		c Conditions
+		c Condition
 	}
 )
 
-func NewTask(c Conditions) context.Task {
+func NewTask(c Condition) context.Task {
 	return &ConditionsTask{c}
 }
 
@@ -33,45 +39,26 @@ func (c *ConditionsTask) Run(ctx context.ExecutionContext) error {
 	return nil
 }
 
-func (c Conditions) Match(ctx context.ExecutionContext) (bool, error) {
-	for name, condition := range c {
+func (c *Conditions) Match(ctx context.ExecutionContext) (bool, error) {
+	if c.conditions == nil {
+		conditions := []Condition{}
+		for _, condition := range []Condition{c.Compare, c.Script, c.Always, c.Never} {
+			if reflect.ValueOf(condition).IsNil() {
+				continue
+			}
+			conditions = append(conditions, condition)
+		}
+		c.conditions = conditions
+	}
+
+	for _, condition := range c.conditions {
 		matched, err := condition.Match(ctx)
 		if err != nil {
-			return false, errors.Wrapf(err, "failed on condition '%s'", name)
+			return false, errors.Wrapf(err, "failed on condition")
 		}
 		if !matched {
 			return false, nil
 		}
 	}
 	return true, nil
-}
-
-func (c *Conditions) UnmarshalJSON(data []byte) (err error) {
-	var m map[string]interface{}
-	if err := json.Unmarshal(data, &m); err != nil {
-		return err
-	}
-	conditions := map[string]Condition{}
-	for name, cond := range m {
-		var condition Condition
-		switch name {
-		case "script":
-			condition = &ScriptCondition{}
-		case "compare":
-			condition = &CompareCondition{}
-		case "always":
-			condition = &AlwaysCondition{}
-		case "never":
-			condition = &NeverCondition{}
-		default:
-			return errors.New("unsupported condition: " + name)
-		}
-		o, _ := json.Marshal(cond)
-		if err := json.Unmarshal(o, condition); err != nil {
-			return err
-		}
-		conditions[name] = condition
-	}
-	*c = conditions
-	return nil
 }

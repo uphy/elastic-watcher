@@ -6,9 +6,9 @@ import (
 )
 
 type TransformInput struct {
-	transform.Transform
+	transform.Transforms
 }
 
 func (t *TransformInput) Run(ctx context.ExecutionContext) error {
-	return t.Transform.Run(ctx)
+	return t.Transforms.Run(ctx)
 }

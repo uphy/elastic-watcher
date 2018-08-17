@@ -5,18 +5,18 @@ import (
 )
 
 type (
-	Transform struct {
-		Chain  *ChainTransformer  `json:"chain,omitempty"`
-		Script *ScriptTransformer `json:"script,omitempty"`
-		Search *SearchTransformer `json:"search,omitempty"`
+	Transforms struct {
+		Chain  *ChainTransform  `json:"chain,omitempty"`
+		Script *ScriptTransform `json:"script,omitempty"`
+		Search *SearchTransform `json:"search,omitempty"`
 	}
-	Transformer interface {
+	Transform interface {
 		context.Task
 	}
 )
 
-func (t *Transform) Run(ctx context.ExecutionContext) error {
-	transformers := []Transformer{}
+func (t *Transforms) Run(ctx context.ExecutionContext) error {
+	transformers := []Transform{}
 	if t.Chain != nil {
 		transformers = append(transformers, t.Chain)
 	}

@@ -1,12 +1,12 @@
 package actions
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
+	"reflect"
 
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/uphy/elastic-watcher/watcher/condition"
 	"github.com/uphy/elastic-watcher/watcher/context"
 	"github.com/uphy/elastic-watcher/watcher/transform"
@@ -19,62 +19,25 @@ type (
 	DryRunner interface {
 		DryRun(ctx context.ExecutionContext) error
 	}
-
 	actionContainer struct {
-		typ            string
-		action         Action
-		condition      *condition.Conditions
-		transform      *transform.Transform
-		throttlePeriod *Duration
-		dryRun         *bool
+		// common options
+		Condition      *condition.Conditions `json:"condition"`
+		Transform      *transform.Transforms `json:"transform"`
+		ThrottlePeriod *Duration             `json:"throttle_period"`
+		DryRun         *bool                 `json:"dry_run"`
+
+		// actions.  need to be specified one of these in json file.
+		Logging   *LoggingAction   `json:"logging"`
+		SendEmail *SendEmailAction `json:"send_email"`
+		Webhook   *WebhookAction   `json:"webhook"`
+
 		// lastAlert maps _key parameter of payload to last action time
-		lastAlert map[string]time.Time
+		lastAlert map[string]time.Time `json:"-"`
+		action    Action               `json:"-"`
 	}
 
 	Actions map[string]*actionContainer
 )
-
-func (a *actionContainer) run(ctx context.ExecutionContext) error {
-	keyObj := ctx.Payload()["_key"]
-	key := fmt.Sprint(keyObj)
-	if a.throttlePeriod != nil {
-		if lastAlert, ok := a.lastAlert[key]; ok {
-			if time.Now().Before(lastAlert.Add(a.throttlePeriod.Duration)) {
-				return nil
-			}
-		}
-	}
-	if a.condition != nil {
-		matched, err := a.condition.Match(ctx)
-		if err != nil {
-			return err
-		}
-		if !matched {
-			return nil
-		}
-	}
-	if a.transform != nil {
-		err := a.transform.Run(ctx)
-		if err != nil {
-			return err
-		}
-	}
-	if a.dryRun != nil && *a.dryRun {
-		if dryRunner, ok := a.action.(DryRunner); ok {
-			if err := dryRunner.DryRun(ctx); err != nil {
-				return err
-			}
-		} else {
-			ctx.Logger().Infof("%s skipped because it doesn't support dry-run.", a.typ)
-		}
-	} else {
-		if err := a.action.Run(ctx); err != nil {
-			return err
-		}
-	}
-	a.lastAlert[key] = time.Now()
-	return nil
-}
 
 func (a Actions) Run(ctx context.ExecutionContext) error {
 	tasks := []context.Task{}
@@ -84,118 +47,71 @@ func (a Actions) Run(ctx context.ExecutionContext) error {
 	return ctx.TaskRunner().Run(context.NewParallelTask(tasks))
 }
 
-func (a *Actions) UnmarshalJSON(data []byte) (err error) {
-	var m map[string](map[string]interface{})
-	if err := json.Unmarshal(data, &m); err != nil {
-		return err
-	}
-	actions := map[string]*actionContainer{}
-	for name, typeAndOptions := range m {
-		a := &actionContainer{
-			lastAlert: map[string]time.Time{},
+func (a *actionContainer) run(ctx context.ExecutionContext) error {
+	// initialization
+	if a.action == nil {
+		for _, action := range []Action{a.Logging, a.SendEmail, a.Webhook} {
+			if reflect.ValueOf(action).IsNil() {
+				continue
+			}
+			if a.action != nil {
+				return errors.New("multiple actions specified in a name")
+			}
+			a.action = action
 		}
-		for typ, options := range typeAndOptions {
-			b, err := json.Marshal(options)
-			if err != nil {
+		if a.action == nil {
+			return errors.New("no action is defined")
+		}
+	}
+	if a.lastAlert == nil {
+		a.lastAlert = map[string]time.Time{}
+	}
+
+	// throttle
+	keyObj := ctx.Payload()["_key"]
+	key := fmt.Sprint(keyObj)
+	if a.ThrottlePeriod != nil {
+		if lastAlert, ok := a.lastAlert[key]; ok {
+			if time.Now().Before(lastAlert.Add(a.ThrottlePeriod.Duration)) {
+				return nil
+			}
+		}
+	}
+
+	// condition
+	if a.Condition != nil {
+		matched, err := a.Condition.Match(ctx)
+		if err != nil {
+			return err
+		}
+		if !matched {
+			return nil
+		}
+	}
+
+	// transform
+	if a.Transform != nil {
+		err := a.Transform.Run(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	// run action
+	if a.DryRun != nil && *a.DryRun {
+		if dryRunner, ok := a.action.(DryRunner); ok {
+			if err := dryRunner.DryRun(ctx); err != nil {
 				return err
 			}
-
-			switch typ {
-			case "condition":
-				var cond condition.Conditions
-				if err := json.Unmarshal(b, &cond); err != nil {
-					return err
-				}
-				a.condition = &cond
-			case "throttle_period":
-				var d Duration
-				if err := json.Unmarshal(b, &d); err != nil {
-					return err
-				}
-				a.throttlePeriod = &d
-			case "transform":
-				var t transform.Transform
-				if err := json.Unmarshal(b, &t); err != nil {
-					return err
-				}
-				a.transform = &t
-			case "dry_run":
-				var dryRun bool
-				if err := json.Unmarshal(b, &dryRun); err != nil {
-					return err
-				}
-				a.dryRun = &dryRun
-			default:
-				act := newAction(typ)
-				if act == nil {
-					return errors.New("unsupported action: " + typ)
-				}
-				if err := json.Unmarshal(b, act); err != nil {
-					return err
-				}
-				a.typ = typ
-				a.action = act
-			}
+		} else {
+			ctx.Logger().Infof("%s skipped because it doesn't support dry-run.", reflect.TypeOf(a.action))
 		}
-		actions[name] = a
+	} else {
+		if err := a.action.Run(ctx); err != nil {
+			return err
+		}
 	}
-	*a = actions
+
+	a.lastAlert[key] = time.Now()
 	return nil
-}
-
-func (a Actions) MarshalJSON() ([]byte, error) {
-	m := map[string](map[string]interface{}){}
-	for name, action := range a {
-		actionMap := map[string]interface{}{}
-		d, err := json.Marshal(action.action)
-		if err != nil {
-			return nil, err
-		}
-		if err := json.Unmarshal(d, &actionMap); err != nil {
-			return nil, err
-		}
-		if action.condition != nil {
-			b, err := json.Marshal(action.condition)
-			if err != nil {
-				return nil, err
-			}
-			conditionMap := map[string]interface{}{}
-			if err := json.Unmarshal(b, &conditionMap); err != nil {
-				return nil, err
-			}
-			actionMap["condition"] = conditionMap
-		}
-		if action.throttlePeriod != nil {
-			actionMap["throttle_period"] = action.throttlePeriod.String()
-		}
-		if action.transform != nil {
-			b, err := json.Marshal(action.transform)
-			if err != nil {
-				return nil, err
-			}
-			transformMap := map[string]interface{}{}
-			if err := json.Unmarshal(b, &transformMap); err != nil {
-				return nil, err
-			}
-			actionMap["transform"] = transformMap
-		}
-		if action.dryRun != nil {
-			actionMap["dry_run"] = *action.dryRun
-		}
-		m[name] = actionMap
-	}
-	return json.Marshal(m)
-}
-
-func newAction(typ string) Action {
-	switch typ {
-	case "logging":
-		return &LoggingAction{}
-	case "send_email":
-		return &SendEmailAction{}
-	case "webhook":
-		return &WebhookAction{}
-	default:
-		return nil
-	}
 }

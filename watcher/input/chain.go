@@ -8,7 +8,7 @@ type ChainInput struct {
 	Inputs []NamedInput `json:"inputs"`
 }
 
-type NamedInput map[string]Input
+type NamedInput map[string]Inputs
 
 func (i *ChainInput) Run(ctx context.ExecutionContext) error {
 	p := context.JSONObject{}

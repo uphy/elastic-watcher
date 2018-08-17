@@ -7,10 +7,10 @@ import (
 
 type (
 	SearchInput struct {
-		transform.SearchTransformer
+		transform.SearchTransform
 	}
 )
 
 func (s SearchInput) Run(ctx context.ExecutionContext) error {
-	return s.SearchTransformer.Run(ctx)
+	return s.SearchTransform.Run(ctx)
 }
