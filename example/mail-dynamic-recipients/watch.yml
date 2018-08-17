@@ -1,0 +1,83 @@
+# input defines the input of this watch.
+# input: https://www.elastic.co/guide/en/x-pack/current/input.html
+input:
+  # this is the `chain` input which combinates multiple inputs.
+  # chain input: https://www.elastic.co/guide/en/x-pack/current/input-chain.html
+  chain:
+    inputs:
+      # The first input of this watch.
+      # This is the `simple` input returns CPU metrics for each servers.
+      # You will use not `simple` but `search`, `http` input in the most actual cases.
+      # simple input: https://www.elastic.co/guide/en/x-pack/current/input-simple.html
+      - dummy:
+          simple:
+            events:
+            - host: srv1-dev
+              cpu: 0.9
+            - host: srv1-prod
+              cpu: 0.1
+            - host: srv1-staging
+              cpu: 0.1
+            - host: srv2-dev
+              cpu: 0.1
+            - host: srv2-prod
+              cpu: 0.9
+            - host: srv2-staging
+              cpu: 0.9
+      # This is the `script` transform which transforms the input payload.
+      # Here in this example, call a special function `split()`.
+      # split() splits the argument object array to multiple payloads.
+      # In the latter inputs, conditions, transforms, actions, runs for each payloads.
+      - splitevents:
+          transform:
+            script: |
+              split(ctx.payload.dummy.events)
+      # For conformation of the behavior, log the payloads.
+      # You will see multiple "Payload: ~~" because payload has been splitted in the previous input.
+      - debug:
+          transform:
+            script: |
+              log("Payload: " + JSON.stringify(ctx.payload));
+              ctx.payload
+
+# Condition determines whether or not to execute the watch actions.
+# Here in this example, when the CPU percentage is greater than or equals to 0.9, triggers action.
+# https://www.elastic.co/guide/en/x-pack/current/condition.html
+condition:
+  compare:
+    ctx.payload.cpu:
+      gte: 0.9
+
+# transform executed before the actions.
+# In this example, append additional payload `email` to determine the email recipients dynamically.
+# https://www.elastic.co/guide/en/x-pack/current/transform.html
+transform:
+  script: |
+    String.prototype.endsWith = function(suffix){
+      return this.indexOf(suffix, this.length - suffix.length) !== -1;
+    }
+    var email = ["DEV <dev@example.com>"];
+    var host = ctx.payload.host;
+    if(host.endsWith("-prod") || host.endsWith("-staging")){
+      email.push("OPS <ops@example.com>");
+    }
+    ctx.payload.email = email;
+    ctx.payload;
+
+# action defines the watch actions.
+# In this example, send mail to the recipients specified in the previous transform.
+actions:
+  email:
+    send_email:
+      email:
+        from: Me <me@example.com>
+        # `toJson` converts parameters to JSON representation
+        # https://github.com/elastic/elasticsearch/blob/master/docs/reference/search/search-template.asciidoc#converting-parameters-to-json
+        # JSON array of `to` parameter parsed as multiple recipients.
+        to: "{{#toJson}}ctx.payload.email{{/toJson}}"
+        subject: "High CPU usage: {{ ctx.payload.host }}"
+        body: |
+          CPU usage is high(>=90%) in {{ ctx.payload.host }}.
+          
+          Host:      {{ ctx.payload.host }}
+          CPU Usage: {{ ctx.payload.cpu }}

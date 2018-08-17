@@ -20,6 +20,19 @@ type (
 	}
 )
 
+func (t TemplateValue) StringSlice(ctx ExecutionContext) ([]string, error) {
+	raw, err := t.String(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rawBytes := []byte(raw)
+	var s []string
+	if err := json.Unmarshal(rawBytes, &s); err == nil {
+		return s, nil
+	}
+	return []string{raw}, nil
+}
+
 func (t TemplateValue) String(ctx ExecutionContext) (string, error) {
 	var source string
 	if t.Source != nil {
@@ -116,14 +129,14 @@ func (t TemplateValues) Map(ctx ExecutionContext) (map[string]string, error) {
 	return m, nil
 }
 
-func (t TemplateValues) Slice(ctx ExecutionContext) ([]string, error) {
+func (t TemplateValues) StringSlice(ctx ExecutionContext) ([]string, error) {
 	s := []string{}
 	for _, e := range t {
-		v, err := e.value.String(ctx)
+		v, err := e.value.StringSlice(ctx)
 		if err != nil {
 			return nil, err
 		}
-		s = append(s, v)
+		s = append(s, v...)
 	}
 	return s, nil
 }

@@ -9,3 +9,4 @@ The watch config file format based on [Elastic X-Pack watcher feature](https://w
 - Payload split
 - Input condition
 - dry_run option for action
+- TO/CC email address can be JSON array format.

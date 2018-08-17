@@ -29,7 +29,9 @@ type (
 	Address struct {
 		context.TemplateValue
 	}
-	Addresses []Address
+	Addresses struct {
+		context.TemplateValues
+	}
 )
 
 func (a Address) parse(ctx context.ExecutionContext) (*mail.Address, error) {
@@ -41,9 +43,14 @@ func (a Address) parse(ctx context.ExecutionContext) (*mail.Address, error) {
 }
 
 func (a Addresses) parse(ctx context.ExecutionContext) ([]mail.Address, error) {
+	values, err := a.TemplateValues.StringSlice(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	var addr []mail.Address
-	for _, v := range a {
-		parsed, err := v.parse(ctx)
+	for _, v := range values {
+		parsed, err := mail.ParseAddress(v)
 		if err != nil {
 			return nil, err
 		}

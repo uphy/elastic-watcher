@@ -1,0 +1,11 @@
+# https://www.elastic.co/guide/en/x-pack/current/actions-email.html#configuring-email
+email:
+  default_account: default
+  account:
+    default:
+      smtp:
+        host: localhost
+        port: 1025
+        auth: true
+        user: foo
+        password: foo
