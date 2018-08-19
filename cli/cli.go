@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"github.com/uphy/elastic-watcher/config"
+	"github.com/uphy/elastic-watcher/pkg/config"
 	"github.com/urfave/cli"
 )
 
@@ -111,8 +111,4 @@ func NewCLI() *CLI {
 
 func (c *CLI) Run(args []string) error {
 	return c.app.Run(args)
-}
-
-func main() {
-
 }

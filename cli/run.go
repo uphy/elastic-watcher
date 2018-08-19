@@ -7,10 +7,10 @@ import (
 	"os/signal"
 	"path/filepath"
 
-	"github.com/uphy/elastic-watcher/watcher"
 	"github.com/urfave/cli"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/uphy/elastic-watcher/pkg/watch"
 )
 
 func (c *CLI) run() cli.Command {
@@ -45,9 +45,9 @@ func (c *CLI) run() cli.Command {
 				ruleFiles = append(ruleFiles, path)
 			}
 			// read watch config files
-			watchConfigs := []*watcher.WatchConfig{}
+			watchConfigs := []*watch.WatchConfig{}
 			for _, f := range ruleFiles {
-				watchConf, err := watcher.LoadFile(f)
+				watchConf, err := watch.LoadFile(f)
 				if err != nil {
 					log.Printf("Failed to load config file %s: %v", f, err)
 					continue
@@ -61,8 +61,8 @@ func (c *CLI) run() cli.Command {
 					conf.Save(os.Stdout)
 				}
 				if ctx.Bool("now") {
-					watch := watcher.NewWatch(c.globalConfig, conf)
-					if err := watch.Run(); err != nil {
+					w := watch.NewWatch(c.globalConfig, conf)
+					if err := w.Run(); err != nil {
 						log.Printf("Failed to run watch: %v", err)
 						errs = multierror.Append(errs, err)
 					}
@@ -72,7 +72,7 @@ func (c *CLI) run() cli.Command {
 				return errs
 			}
 
-			wa := watcher.New(c.globalConfig)
+			wa := watch.New(c.globalConfig)
 			for _, conf := range watchConfigs {
 				if err := wa.AddWatch(conf); err != nil {
 					log.Printf("Failed to add watch: %v", err)
